@@ -1,8 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends
+"""API endpoints for ad group management."""
 from typing import List
+
+from fastapi import APIRouter, HTTPException, Depends
+
+from api.security import verify_api_key
 from models.ad_group import AdGroup, AdGroupCreate
 from services.ads_manager import AdsManager, get_ads_manager
-from api.security import verify_api_key
 
 router = APIRouter(prefix="/ad-groups", tags=["Ad Groups"], dependencies=[Depends(verify_api_key)])
 
@@ -25,9 +28,9 @@ async def get_ad_groups(
         ad_groups = await ads_manager.get_ad_groups(provider, customer_id, campaign_id)
         return ad_groups
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/{provider}/{customer_id}/{campaign_id}", response_model=AdGroup)
@@ -50,6 +53,6 @@ async def create_ad_group(
         )
         return created
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

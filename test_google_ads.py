@@ -16,7 +16,7 @@ def test_connection():
             customer_id = resource_name.split("/")[-1]
             print(f"  - {customer_id}")
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"❌ Fehler: {e}")
 
 if __name__ == "__main__":

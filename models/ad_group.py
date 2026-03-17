@@ -1,9 +1,13 @@
-from pydantic import BaseModel
-from typing import Optional, List
+"""Ad group models and schemas."""
 from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class AdGroupStatus(str, Enum):
+    """Ad group status enumeration."""
+
     ENABLED = "enabled"
     PAUSED = "paused"
     REMOVED = "removed"
@@ -28,6 +32,7 @@ class AdGroup(BaseModel):
 
     @property
     def cpc_euros(self) -> Optional[float]:
+        """Cost per click in euros."""
         if self.cpc_bid_micros:
             return self.cpc_bid_micros / 1_000_000
         return None

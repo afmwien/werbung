@@ -1,9 +1,13 @@
-from pydantic import BaseModel
-from typing import Optional, List
+"""Ad models and schemas."""
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class AdStatus(str, Enum):
+    """Ad status enumeration."""
+
     ENABLED = "enabled"
     PAUSED = "paused"
     REMOVED = "removed"
@@ -11,6 +15,8 @@ class AdStatus(str, Enum):
 
 
 class AdType(str, Enum):
+    """Ad type enumeration."""
+
     TEXT = "text"
     RESPONSIVE_SEARCH = "responsive_search"
     RESPONSIVE_DISPLAY = "responsive_display"

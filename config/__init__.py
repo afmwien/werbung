@@ -1,2 +1,2 @@
-# Configuration module
+"""Configuration module."""
 from .settings import settings

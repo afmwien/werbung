@@ -1,8 +1,11 @@
+"""API endpoints for campaign management."""
+from typing import List
+
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Optional
+
+from api.security import verify_api_key
 from models.campaign import Campaign, CampaignCreate, CampaignUpdate
 from services.ads_manager import AdsManager, get_ads_manager
-from api.security import verify_api_key
 
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"], dependencies=[Depends(verify_api_key)])
 
@@ -23,9 +26,9 @@ async def get_campaigns(
         campaigns = await ads_manager.get_campaigns(provider, customer_id)
         return campaigns
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/{provider}/{customer_id}/{campaign_id}", response_model=Campaign)
@@ -42,9 +45,9 @@ async def get_campaign(
             raise HTTPException(status_code=404, detail="Kampagne nicht gefunden")
         return campaign
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/{provider}/{customer_id}", response_model=Campaign)
@@ -64,9 +67,9 @@ async def create_campaign(
         created = await ads_manager.create_campaign(provider, customer_id, campaign)
         return created
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.put("/{provider}/{customer_id}/{campaign_id}", response_model=Campaign)
@@ -82,9 +85,9 @@ async def update_campaign(
         updated = await ads_manager.update_campaign(provider, customer_id, campaign_id, campaign)
         return updated
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/{provider}/{customer_id}/{campaign_id}/pause")
@@ -99,7 +102,7 @@ async def pause_campaign(
         success = await ads_manager.pause_campaign(provider, customer_id, campaign_id)
         return {"success": success, "message": "Kampagne pausiert"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/{provider}/{customer_id}/{campaign_id}/enable")
@@ -114,7 +117,7 @@ async def enable_campaign(
         success = await ads_manager.enable_campaign(provider, customer_id, campaign_id)
         return {"success": success, "message": "Kampagne aktiviert"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.delete("/{provider}/{customer_id}/{campaign_id}")
@@ -129,4 +132,4 @@ async def delete_campaign(
         success = await ads_manager.delete_campaign(provider, customer_id, campaign_id)
         return {"success": success, "message": "Kampagne gelöscht"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

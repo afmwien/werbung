@@ -1,10 +1,14 @@
-from pydantic import BaseModel
-from typing import Optional
-from enum import Enum
+"""Campaign models and schemas."""
 from datetime import datetime
+from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class CampaignStatus(str, Enum):
+    """Campaign status enumeration."""
+
     ENABLED = "enabled"
     PAUSED = "paused"
     REMOVED = "removed"
@@ -12,6 +16,8 @@ class CampaignStatus(str, Enum):
 
 
 class CampaignType(str, Enum):
+    """Campaign type enumeration."""
+
     SEARCH = "search"
     DISPLAY = "display"
     VIDEO = "video"

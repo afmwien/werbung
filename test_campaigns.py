@@ -39,7 +39,7 @@ def test_campaigns():
 
     except GoogleAdsException as ex:
         print(f"❌ Google Ads Fehler: {ex.failure.errors[0].message}")
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"❌ Fehler: {e}")
 
 if __name__ == "__main__":

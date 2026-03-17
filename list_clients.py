@@ -33,7 +33,7 @@ def list_clients():
             print(f"  ID: {cc.id} - {cc.descriptive_name}{manager_label}")
             print(f"     Status: {cc.status.name}, Level: {cc.level}")
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Fehler: {e}")
 
 if __name__ == "__main__":

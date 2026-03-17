@@ -1,6 +1,8 @@
-from pydantic import BaseModel
-from typing import Optional, List
+"""Performance report models and schemas."""
 from datetime import date
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class PerformanceMetrics(BaseModel):

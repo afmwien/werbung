@@ -1,8 +1,11 @@
+"""Ads Manager service - central management for all ad providers."""
+# pylint: disable=invalid-name,too-many-arguments,too-many-positional-arguments
 from typing import Dict, List, Optional
-from providers.base import AdsProvider
-from providers.google_ads import GoogleAdsProvider
+
 from models.campaign import Campaign, CampaignCreate, CampaignUpdate
 from models.report import PerformanceReport
+from providers.base import AdsProvider
+from providers.google_ads import GoogleAdsProvider
 
 # Später hinzufügen:
 # from providers.meta_ads import MetaAdsProvider
@@ -134,7 +137,7 @@ _ads_manager: Optional[AdsManager] = None
 
 def get_ads_manager() -> AdsManager:
     """Dependency für FastAPI - gibt Singleton AdsManager zurück"""
-    global _ads_manager
+    global _ads_manager  # pylint: disable=global-statement
     if _ads_manager is None:
         _ads_manager = AdsManager()
     return _ads_manager

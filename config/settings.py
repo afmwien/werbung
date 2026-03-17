@@ -1,10 +1,12 @@
-from pydantic_settings import BaseSettings
+"""Application settings configuration using pydantic-settings."""
+# pylint: disable=too-few-public-methods
 from typing import Optional
-import os
+
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """Application settings - loaded from environment variables"""
+    """Application settings - loaded from environment variables."""
 
     # App Settings
     APP_NAME: str = "Ads Manager"
@@ -31,6 +33,8 @@ class Settings(BaseSettings):
     # META_ACCESS_TOKEN: Optional[str] = None
 
     class Config:
+        """Pydantic model configuration."""
+
         env_file = ".env"
         case_sensitive = True
         extra = "ignore"

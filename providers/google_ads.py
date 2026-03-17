@@ -1,12 +1,21 @@
+"""Google Ads API provider implementation."""
 # type: ignore
 # pyright: reportGeneralTypeIssues=false
-from typing import List, Optional, Any, TYPE_CHECKING
-from .base import AdsProvider
-from models.campaign import Campaign, CampaignCreate, CampaignUpdate, CampaignStatus, CampaignType
-from models.ad_group import AdGroup, AdGroupStatus
-from models.ad import Ad, AdStatus, AdType
-from models.report import PerformanceReport, PerformanceMetrics, CampaignPerformance
+# pylint: disable=broad-exception-caught,broad-exception-raised,too-many-locals
 from datetime import date
+from typing import List, Optional
+
+from models.ad import Ad, AdStatus, AdType
+from models.ad_group import AdGroup, AdGroupStatus
+from models.campaign import Campaign, CampaignCreate, CampaignUpdate, CampaignStatus, CampaignType
+from models.report import CampaignPerformance, PerformanceMetrics, PerformanceReport
+
+from .base import AdsProvider
+
+
+class GoogleAdsError(Exception):
+    \"\"\"Custom exception for Google Ads API errors.\"\"\"
+
 
 # Google Ads API imports
 try:
@@ -44,7 +53,7 @@ class GoogleAdsProvider(AdsProvider):
             self.client = GoogleAdsClient.load_from_storage(self.config_path)
             return True
         except Exception as e:
-            raise Exception(f"Google Ads Authentifizierung fehlgeschlagen: {e}")
+            raise GoogleAdsError(f"Google Ads Authentifizierung fehlgeschlagen: {e}") from e
 
     async def test_connection(self) -> bool:
         """Verbindung testen"""
@@ -54,7 +63,7 @@ class GoogleAdsProvider(AdsProvider):
         try:
             # Einfache Abfrage um Verbindung zu testen
             return True
-        except Exception:
+        except GoogleAdsException:
             return False
 
     # ============== CAMPAIGNS ==============
@@ -88,7 +97,7 @@ class GoogleAdsProvider(AdsProvider):
                 campaigns.append(campaign)
 
         except GoogleAdsException as ex:
-            raise Exception(f"Google Ads Fehler: {ex.failure.errors[0].message}")
+            raise GoogleAdsError(f"Google Ads Fehler: {ex.failure.errors[0].message}") from ex
 
         return campaigns
 
@@ -117,7 +126,7 @@ class GoogleAdsProvider(AdsProvider):
                 return self._map_campaign(row.campaign, row.campaign_budget)
 
         except GoogleAdsException as ex:
-            raise Exception(f"Google Ads Fehler: {ex.failure.errors[0].message}")
+            raise GoogleAdsError(f"Google Ads Fehler: {ex.failure.errors[0].message}") from ex
 
         return None
 
@@ -174,7 +183,7 @@ class GoogleAdsProvider(AdsProvider):
             return await self.get_campaign(customer_id, created_id)
 
         except GoogleAdsException as ex:
-            raise Exception(f"Kampagne konnte nicht erstellt werden: {ex.failure.errors[0].message}")
+            raise GoogleAdsError(f"Kampagne konnte nicht erstellt werden: {ex.failure.errors[0].message}") from ex
 
     async def update_campaign(self, customer_id: str, campaign_id: str, campaign: CampaignUpdate) -> Campaign:
         """Kampagne aktualisieren"""
@@ -208,7 +217,7 @@ class GoogleAdsProvider(AdsProvider):
             return await self.get_campaign(customer_id, campaign_id)
 
         except GoogleAdsException as ex:
-            raise Exception(f"Kampagne konnte nicht aktualisiert werden: {ex.failure.errors[0].message}")
+            raise GoogleAdsError(f"Kampagne konnte nicht aktualisiert werden: {ex.failure.errors[0].message}") from ex
 
     async def pause_campaign(self, customer_id: str, campaign_id: str) -> bool:
         """Kampagne pausieren"""
@@ -240,7 +249,7 @@ class GoogleAdsProvider(AdsProvider):
             return True
 
         except GoogleAdsException as ex:
-            raise Exception(f"Kampagne konnte nicht gelöscht werden: {ex.failure.errors[0].message}")
+            raise GoogleAdsError(f"Kampagne konnte nicht gelöscht werden: {ex.failure.errors[0].message}") from ex
 
     # ============== AD GROUPS ==============
 
@@ -280,7 +289,7 @@ class GoogleAdsProvider(AdsProvider):
                 ad_groups.append(ad_group)
 
         except GoogleAdsException as ex:
-            raise Exception(f"Google Ads Fehler: {ex.failure.errors[0].message}")
+            raise GoogleAdsError(f"Google Ads Fehler: {ex.failure.errors[0].message}") from ex
 
         return ad_groups
 
@@ -318,7 +327,7 @@ class GoogleAdsProvider(AdsProvider):
             )
 
         except GoogleAdsException as ex:
-            raise Exception(f"Anzeigengruppe konnte nicht erstellt werden: {ex.failure.errors[0].message}")
+            raise GoogleAdsError(f"Anzeigengruppe konnte nicht erstellt werden: {ex.failure.errors[0].message}") from ex
 
     # ============== ADS ==============
 
@@ -361,7 +370,7 @@ class GoogleAdsProvider(AdsProvider):
                 ads.append(ad)
 
         except GoogleAdsException as ex:
-            raise Exception(f"Google Ads Fehler: {ex.failure.errors[0].message}")
+            raise GoogleAdsError(f"Google Ads Fehler: {ex.failure.errors[0].message}") from ex
 
         return ads
 
@@ -410,7 +419,7 @@ class GoogleAdsProvider(AdsProvider):
             )
 
         except GoogleAdsException as ex:
-            raise Exception(f"Anzeige konnte nicht erstellt werden: {ex.failure.errors[0].message}")
+            raise GoogleAdsError(f"Anzeige konnte nicht erstellt werden: {ex.failure.errors[0].message}") from ex
 
     # ============== REPORTING ==============
 
@@ -479,7 +488,7 @@ class GoogleAdsProvider(AdsProvider):
                 total_conversion_value += row.metrics.conversions_value
 
         except GoogleAdsException as ex:
-            raise Exception(f"Google Ads Fehler: {ex.failure.errors[0].message}")
+            raise GoogleAdsError(f"Google Ads Fehler: {ex.failure.errors[0].message}") from ex
 
         return PerformanceReport(
             provider=self.provider_name,
@@ -523,7 +532,7 @@ class GoogleAdsProvider(AdsProvider):
     def _map_status_to_google(self, status: CampaignStatus):
         """Einheitlicher Status zu Google Status"""
         if not self.client:
-            raise Exception("Client nicht initialisiert")
+            raise RuntimeError("Client nicht initialisiert")
 
         mapping = {
             CampaignStatus.ENABLED: self.client.enums.CampaignStatusEnum.ENABLED,
@@ -546,7 +555,7 @@ class GoogleAdsProvider(AdsProvider):
     def _map_campaign_type_to_google(self, campaign_type: CampaignType):
         """Einheitlicher Typ zu Google Channel Type"""
         if not self.client:
-            raise Exception("Client nicht initialisiert")
+            raise RuntimeError("Client nicht initialisiert")
 
         mapping = {
             CampaignType.SEARCH: self.client.enums.AdvertisingChannelTypeEnum.SEARCH,

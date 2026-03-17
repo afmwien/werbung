@@ -1,13 +1,12 @@
+"""Ads Manager API - FastAPI Application."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
 from config.settings import settings
 from api.campaigns import router as campaigns_router
 from api.ad_groups import router as ad_groups_router
 from api.ads import router as ads_router
 from api.reports import router as reports_router
-import os
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -75,7 +74,7 @@ async def health():
 @app.get("/api/providers")
 async def list_providers():
     """Liste aller verfügbaren Ads-Provider"""
-    from services.ads_manager import get_ads_manager
+    from services.ads_manager import get_ads_manager  # pylint: disable=import-outside-toplevel
     manager = get_ads_manager()
     return {
         "providers": manager.list_providers()
@@ -83,7 +82,7 @@ async def list_providers():
 
 
 if __name__ == "__main__":
-    import uvicorn
+    import uvicorn  # pylint: disable=import-outside-toplevel
     uvicorn.run(
         "main:app",
         host="0.0.0.0",

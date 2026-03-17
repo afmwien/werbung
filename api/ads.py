@@ -1,8 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends
+"""API endpoints for ad management."""
 from typing import List
+
+from fastapi import APIRouter, HTTPException, Depends
+
+from api.security import verify_api_key
 from models.ad import Ad, AdCreate
 from services.ads_manager import AdsManager, get_ads_manager
-from api.security import verify_api_key
 
 router = APIRouter(prefix="/ads", tags=["Ads"], dependencies=[Depends(verify_api_key)])
 
@@ -25,9 +28,9 @@ async def get_ads(
         ads = await ads_manager.get_ads(provider, customer_id, ad_group_id)
         return ads
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/{provider}/{customer_id}/{ad_group_id}", response_model=Ad)
@@ -51,6 +54,6 @@ async def create_ad(
         )
         return created
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

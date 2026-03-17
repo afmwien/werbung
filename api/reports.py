@@ -1,8 +1,12 @@
+"""API endpoints for performance reports."""
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Optional
+
+from api.security import verify_api_key
 from models.report import PerformanceReport
 from services.ads_manager import AdsManager, get_ads_manager
-from api.security import verify_api_key
 
 router = APIRouter(prefix="/reports", tags=["Reports"], dependencies=[Depends(verify_api_key)])
 
@@ -37,6 +41,6 @@ async def get_performance_report(
         )
         return report
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

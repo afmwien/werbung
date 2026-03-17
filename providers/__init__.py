@@ -1,4 +1,4 @@
-# Providers module - Ads platform integrations
+"""Providers module - Ads platform integrations."""
 from .base import AdsProvider
 from .google_ads import GoogleAdsProvider
 

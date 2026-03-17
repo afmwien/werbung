@@ -1,4 +1,4 @@
-# API Routes module
+"""API Routes module."""
 from .campaigns import router as campaigns_router
 from .reports import router as reports_router
 
