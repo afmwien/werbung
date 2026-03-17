@@ -681,20 +681,22 @@
 
         // Render Performance Stats
         function renderPerformanceStats(report) {
-            const totals = report.totals || {};
+            const totals = report.total_metrics || {};
+            const costEur = (totals.cost_micros || 0) / 1000000;
+            const ctr = totals.impressions > 0 ? totals.clicks / totals.impressions : 0;
 
             document.getElementById('perfImpressions').textContent =
                 formatNumber(totals.impressions || 0);
             document.getElementById('perfClicks').textContent =
                 formatNumber(totals.clicks || 0);
             document.getElementById('perfCtr').textContent =
-                formatPercent(totals.ctr || 0);
+                formatPercent(ctr);
             document.getElementById('perfCost').textContent =
-                formatCurrency(totals.cost || 0);
+                formatCurrency(costEur);
             document.getElementById('perfConversions').textContent =
                 formatNumber(totals.conversions || 0);
             document.getElementById('perfCpa').textContent =
-                totals.conversions > 0 ? formatCurrency(totals.cost / totals.conversions) : '-';
+                totals.conversions > 0 ? formatCurrency(costEur / totals.conversions) : '-';
         }
 
         // Render Charts
@@ -703,12 +705,10 @@
 
             // Prepare data
             const labels = campaigns.map(c => truncate(c.campaign_name, 20));
-            const impressions = campaigns.map(c => c.impressions || 0);
-            const clicks = campaigns.map(c => c.clicks || 0);
-            const costs = campaigns.map(c => c.cost || 0);
-            const conversions = campaigns.map(c => c.conversions || 0);
-
-            // Destroy existing charts
+            const impressions = campaigns.map(c => c.metrics?.impressions || 0);
+            const clicks = campaigns.map(c => c.metrics?.clicks || 0);
+            const costs = campaigns.map(c => (c.metrics?.cost_micros || 0) / 1000000);
+            const conversions = campaigns.map(c => c.metrics?.conversions || 0);
             if (clicksChart) clicksChart.destroy();
             if (costChart) costChart.destroy();
 
