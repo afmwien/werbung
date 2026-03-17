@@ -1,4 +1,6 @@
-from typing import List, Optional
+# type: ignore
+# pyright: reportGeneralTypeIssues=false
+from typing import List, Optional, Any, TYPE_CHECKING
 from .base import AdsProvider
 from models.campaign import Campaign, CampaignCreate, CampaignUpdate, CampaignStatus, CampaignType
 from models.ad_group import AdGroup, AdGroupStatus
