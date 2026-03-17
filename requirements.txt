@@ -1,0 +1,26 @@
+# Ads Manager - Requirements
+# Python 3.9+
+
+# Web Framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Google Ads
+google-ads>=21.0.0
+
+# Meta Ads (später aktivieren)
+# facebook-business>=17.0.0
+
+# Database (optional)
+# sqlalchemy>=2.0.0
+# alembic>=1.11.0
+
+# Utils
+python-dotenv>=1.0.0
+httpx>=0.24.0
+
+# Development
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
