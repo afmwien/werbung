@@ -14,7 +14,10 @@
         "ad_account_id": "act_34886324",
         "campaign_prefix": "[AFM]"
       },
-      "linkedin": null
+      "linkedin": {
+        "ad_account_id": "519591953",
+        "campaign_prefix": "[AFM]"
+      }
     }
   },
   "rechnungseintreibung": {
@@ -32,7 +35,10 @@
         "ad_account_id": "act_34886324",
         "campaign_prefix": "[RE]"
       },
-      "linkedin": null
+      "linkedin": {
+        "ad_account_id": "519591953",
+        "campaign_prefix": "[RE]"
+      }
     }
   },
   "spr_kanzlei": {
