@@ -14,6 +14,9 @@
 
         :root {
             --primary: #4285f4;
+            --google: #4285f4;
+            --meta: #0668E1;
+            --meta-gradient: linear-gradient(135deg, #0668E1 0%, #0099FF 100%);
             --success: #34a853;
             --warning: #fbbc04;
             --danger: #ea4335;
@@ -74,6 +77,69 @@
             border-color: var(--primary);
         }
 
+        /* Provider Tabs */
+        .provider-tabs {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            gap: 0;
+        }
+
+        .provider-tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: var(--gray);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .provider-tab:hover {
+            color: var(--dark);
+            background: var(--light);
+        }
+
+        .provider-tab.active {
+            color: var(--dark);
+            border-bottom-color: var(--primary);
+        }
+
+        .provider-tab.active[data-provider="google"] {
+            border-bottom-color: var(--google);
+        }
+
+        .provider-tab.active[data-provider="meta"] {
+            border-bottom-color: var(--meta);
+        }
+
+        .provider-tab.active[data-provider="all"] {
+            border-bottom-color: var(--success);
+        }
+
+        .provider-tab .icon {
+            font-size: 1.25rem;
+        }
+
+        .provider-tab .badge {
+            background: var(--light);
+            padding: 0.125rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+
+        .provider-tab.active .badge {
+            background: var(--primary);
+            color: white;
+        }
+
         /* Main Layout */
         .main {
             max-width: 1400px;
@@ -96,10 +162,21 @@
             border: 1px solid var(--border);
         }
 
+        .stat-card.google-accent {
+            border-top: 3px solid var(--google);
+        }
+
+        .stat-card.meta-accent {
+            border-top: 3px solid var(--meta);
+        }
+
         .stat-card .label {
             font-size: 0.875rem;
             color: var(--gray);
             margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .stat-card .value {
@@ -111,17 +188,56 @@
         .stat-card .value.warning { color: var(--warning); }
         .stat-card .value.danger { color: var(--danger); }
 
+        .stat-card .sub-values {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.8125rem;
+        }
+
+        .stat-card .sub-value {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .stat-card .sub-value .google-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--google);
+            border-radius: 50%;
+        }
+
+        .stat-card .sub-value .meta-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--meta);
+            border-radius: 50%;
+        }
+
         /* Account Selector */
         .account-selector {
             background: white;
             border-radius: 8px;
-            padding: 1.5rem;
+            padding: 1.25rem 1.5rem;
             margin-bottom: 2rem;
             border: 1px solid var(--border);
             display: flex;
             gap: 1rem;
             align-items: center;
             flex-wrap: wrap;
+        }
+
+        .account-selector.google-mode {
+            border-left: 4px solid var(--google);
+        }
+
+        .account-selector.meta-mode {
+            border-left: 4px solid var(--meta);
+        }
+
+        .account-selector.all-mode {
+            border-left: 4px solid var(--success);
         }
 
         .account-selector label {
@@ -136,6 +252,16 @@
             font-size: 1rem;
         }
 
+        .customer-id-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .customer-id-group .provider-icon {
+            font-size: 1.25rem;
+        }
+
         .btn {
             padding: 0.5rem 1rem;
             border: none;
@@ -148,6 +274,47 @@
 
         .btn-primary {
             background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3367d6;
+        }
+
+        .btn-google {
+            background: var(--google);
+            color: white;
+        }
+
+        .btn-meta {
+            background: var(--meta);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--dark);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--gray);
+        }
+
+        .btn-outline:hover {
+            background: var(--light);
+        }
             color: white;
         }
 
@@ -199,6 +366,9 @@
         .section-header h2 {
             font-size: 1.125rem;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .campaigns-table {
@@ -226,6 +396,29 @@
 
         .campaigns-table tr:hover {
             background: #f8f9fa;
+        }
+
+        /* Provider Badge in Table */
+        .provider-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            margin-left: 0.5rem;
+        }
+
+        .provider-badge.google {
+            background: rgba(66, 133, 244, 0.1);
+            color: var(--google);
+        }
+
+        .provider-badge.meta {
+            background: rgba(6, 104, 225, 0.1);
+            color: var(--meta);
         }
 
         /* Status Badge */
@@ -613,12 +806,34 @@
         </div>
     </header>
 
+    <!-- Provider Tabs -->
+    <nav class="provider-tabs">
+        <button class="provider-tab active" data-provider="google" onclick="switchProvider('google')">
+            <span class="icon">🔵</span>
+            <span>Google Ads</span>
+            <span class="badge" id="googleCount">0</span>
+        </button>
+        <button class="provider-tab" data-provider="meta" onclick="switchProvider('meta')">
+            <span class="icon">🔷</span>
+            <span>Meta Ads</span>
+            <span class="badge" id="metaCount">0</span>
+        </button>
+        <button class="provider-tab" data-provider="all" onclick="switchProvider('all')">
+            <span class="icon">📊</span>
+            <span>Gesamtübersicht</span>
+        </button>
+    </nav>
+
     <main class="main">
         <!-- Stats -->
-        <div class="stats-grid">
+        <div class="stats-grid" id="statsGrid">
             <div class="stat-card">
                 <div class="label">Kampagnen</div>
                 <div class="value" id="totalCampaigns">-</div>
+                <div class="sub-values" id="campaignSubValues" style="display: none;">
+                    <span class="sub-value"><span class="google-dot"></span> <span id="googleCampaigns">0</span></span>
+                    <span class="sub-value"><span class="meta-dot"></span> <span id="metaCampaigns">0</span></span>
+                </div>
             </div>
             <div class="stat-card">
                 <div class="label">Aktiv</div>
@@ -635,17 +850,20 @@
         </div>
 
         <!-- Account Selector -->
-        <div class="account-selector">
-            <label for="provider">Plattform:</label>
-            <select id="provider">
-                <option value="google">Google Ads</option>
-                <option value="meta" disabled>Meta Ads (bald)</option>
-            </select>
+        <div class="account-selector google-mode" id="accountSelector">
+            <div class="customer-id-group" id="googleIdGroup">
+                <span class="provider-icon">🔵</span>
+                <label for="googleCustomerId">Google Kunden-ID:</label>
+                <input type="text" id="googleCustomerId" value="2936775113" placeholder="z.B. 2936775113" />
+            </div>
 
-            <label for="customerId">Kunden-ID:</label>
-            <input type="text" id="customerId" value="2936775113" placeholder="z.B. 2936775113" />
+            <div class="customer-id-group" id="metaIdGroup" style="display: none;">
+                <span class="provider-icon">🔷</span>
+                <label for="metaCustomerId">Meta Ad Account:</label>
+                <input type="text" id="metaCustomerId" value="act_34886324" placeholder="z.B. act_123456" />
+            </div>
 
-            <button class="btn btn-primary" onclick="loadCampaigns()">🔄 Laden</button>
+            <button class="btn btn-google" id="loadBtn" onclick="loadCampaigns()">🔄 Laden</button>
         </div>
 
         <!-- Performance Charts -->
@@ -746,6 +964,19 @@
         let apiKey = localStorage.getItem('adsManagerApiKey') || '';
         let clicksChart = null;
         let costChart = null;
+        let currentProvider = 'google';
+
+        // Stored customer IDs per provider
+        const customerIds = {
+            google: localStorage.getItem('googleCustomerId') || '2936775113',
+            meta: localStorage.getItem('metaCustomerId') || 'act_34886324'
+        };
+
+        // Cached campaign data
+        let cachedData = {
+            google: { campaigns: [], loaded: false },
+            meta: { campaigns: [], loaded: false }
+        };
 
         // Init
         document.addEventListener('DOMContentLoaded', () => {
@@ -757,6 +988,10 @@
             document.getElementById('endDate').value = formatDate(today);
             document.getElementById('startDate').value = formatDate(thirtyDaysAgo);
 
+            // Load saved customer IDs
+            document.getElementById('googleCustomerId').value = customerIds.google;
+            document.getElementById('metaCustomerId').value = customerIds.meta;
+
             if (apiKey) {
                 document.getElementById('apiKey').value = '••••••••••••••••';
                 loadCampaigns();
@@ -765,6 +1000,46 @@
 
         function formatDate(date) {
             return date.toISOString().split('T')[0];
+        }
+
+        // Switch Provider Tab
+        function switchProvider(provider) {
+            currentProvider = provider;
+
+            // Update tabs
+            document.querySelectorAll('.provider-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.provider === provider);
+            });
+
+            // Update account selector
+            const selector = document.getElementById('accountSelector');
+            const googleGroup = document.getElementById('googleIdGroup');
+            const metaGroup = document.getElementById('metaIdGroup');
+            const loadBtn = document.getElementById('loadBtn');
+            const subValues = document.getElementById('campaignSubValues');
+
+            selector.className = 'account-selector ' + provider + '-mode';
+
+            if (provider === 'google') {
+                googleGroup.style.display = 'flex';
+                metaGroup.style.display = 'none';
+                loadBtn.className = 'btn btn-google';
+                subValues.style.display = 'none';
+            } else if (provider === 'meta') {
+                googleGroup.style.display = 'none';
+                metaGroup.style.display = 'flex';
+                loadBtn.className = 'btn btn-meta';
+                subValues.style.display = 'none';
+            } else {
+                // All providers
+                googleGroup.style.display = 'flex';
+                metaGroup.style.display = 'flex';
+                loadBtn.className = 'btn btn-success';
+                subValues.style.display = 'flex';
+            }
+
+            // Load data for this provider
+            loadCampaigns();
         }
 
         // Save API Key
@@ -777,6 +1052,12 @@
                 showToast('API-Key gespeichert', 'success');
                 loadCampaigns();
             }
+        }
+
+        // Save Customer ID
+        function saveCustomerId(provider, id) {
+            customerIds[provider] = id;
+            localStorage.setItem(provider + 'CustomerId', id);
         }
 
         // API Call
@@ -799,8 +1080,6 @@
 
         // Load Campaigns
         async function loadCampaigns() {
-            const provider = document.getElementById('provider').value;
-            const customerId = document.getElementById('customerId').value;
             const content = document.getElementById('campaignsContent');
 
             if (!apiKey) {
@@ -808,35 +1087,83 @@
                 return;
             }
 
-            if (!customerId) {
-                showToast('Bitte Kunden-ID eingeben', 'error');
-                return;
-            }
+            // Save current customer IDs
+            saveCustomerId('google', document.getElementById('googleCustomerId').value);
+            saveCustomerId('meta', document.getElementById('metaCustomerId').value);
 
             content.innerHTML = '<div class="loading">Lade Kampagnen...</div>';
 
             try {
-                const campaigns = await apiCall(`/api/campaigns/${provider}/${customerId}`);
-                renderCampaigns(campaigns, provider, customerId);
-                updateStats(campaigns);
-                loadPerformance();  // Lade auch Performance-Daten
-                loadRecommendations();  // Lade auch KI-Empfehlungen
+                if (currentProvider === 'all') {
+                    // Load both providers
+                    await Promise.all([
+                        loadProviderCampaigns('google'),
+                        loadProviderCampaigns('meta')
+                    ]);
+
+                    // Combine campaigns
+                    const allCampaigns = [
+                        ...cachedData.google.campaigns.map(c => ({...c, _provider: 'google'})),
+                        ...cachedData.meta.campaigns.map(c => ({...c, _provider: 'meta'}))
+                    ];
+
+                    renderCampaigns(allCampaigns, 'all', '');
+                    updateStatsAll();
+                    updateProviderCounts();
+                    document.getElementById('chartsSection').style.display = 'none';
+                    document.getElementById('recommendationsSection').style.display = 'none';
+
+                } else {
+                    await loadProviderCampaigns(currentProvider);
+                    const campaigns = cachedData[currentProvider].campaigns;
+                    const customerId = customerIds[currentProvider];
+
+                    renderCampaigns(campaigns.map(c => ({...c, _provider: currentProvider})), currentProvider, customerId);
+                    updateStats(campaigns);
+                    updateProviderCounts();
+                    loadPerformance();
+                    loadRecommendations();
+                }
+
                 document.getElementById('lastUpdate').textContent =
                     `Aktualisiert: ${new Date().toLocaleTimeString('de-DE')}`;
+
             } catch (error) {
                 content.innerHTML = `<div class="error">${error.message}</div>`;
                 showToast(error.message, 'error');
             }
         }
 
+        // Load campaigns for a specific provider
+        async function loadProviderCampaigns(provider) {
+            const customerId = customerIds[provider];
+            if (!customerId) return;
+
+            try {
+                const campaigns = await apiCall(`/api/campaigns/${provider}/${customerId}`);
+                cachedData[provider].campaigns = campaigns;
+                cachedData[provider].loaded = true;
+            } catch (error) {
+                console.error(`Error loading ${provider} campaigns:`, error);
+                cachedData[provider].campaigns = [];
+                cachedData[provider].loaded = true;
+            }
+        }
+
+        // Update provider counts in tabs
+        function updateProviderCounts() {
+            document.getElementById('googleCount').textContent = cachedData.google.campaigns.length;
+            document.getElementById('metaCount').textContent = cachedData.meta.campaigns.length;
+        }
+
         // Load Performance Data
         async function loadPerformance() {
-            const provider = document.getElementById('provider').value;
-            const customerId = document.getElementById('customerId').value;
+            const provider = currentProvider;
+            const customerId = customerIds[provider];
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
 
-            if (!apiKey || !customerId) return;
+            if (!apiKey || !customerId || provider === 'all') return;
 
             try {
                 const report = await apiCall(
@@ -1049,6 +1376,7 @@
         // Render Campaigns Table
         function renderCampaigns(campaigns, provider, customerId) {
             const content = document.getElementById('campaignsContent');
+            const showProviderBadge = provider === 'all';
 
             if (campaigns.length === 0) {
                 content.innerHTML = '<div class="empty">Keine Kampagnen gefunden</div>';
@@ -1067,10 +1395,14 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${campaigns.map(c => `
+                        ${campaigns.map(c => {
+                            const campaignProvider = c._provider || provider;
+                            const campaignCustomerId = customerIds[campaignProvider];
+                            return `
                             <tr>
                                 <td>
                                     <strong>${escapeHtml(c.name)}</strong>
+                                    ${showProviderBadge ? `<span class="provider-badge ${campaignProvider}">${campaignProvider === 'google' ? '🔵 Google' : '🔷 Meta'}</span>` : ''}
                                     <br><small style="color: var(--gray)">ID: ${c.id}</small>
                                 </td>
                                 <td>
@@ -1082,16 +1414,16 @@
                                     <span class="campaign-type">${formatCampaignType(c.campaign_type)}</span>
                                 </td>
                                 <td class="budget">
-                                    ${formatBudget(c.budget_amount_micros)}
+                                    ${formatBudget(c.budget_amount_micros || (c.budget_amount ? c.budget_amount * 1000000 : 0))}
                                 </td>
                                 <td class="actions">
                                     ${c.status === 'paused' ?
-                                        `<button class="btn btn-success" onclick="enableCampaign('${provider}', '${customerId}', '${c.id}')">▶ Aktivieren</button>` :
-                                        `<button class="btn btn-warning" onclick="pauseCampaign('${provider}', '${customerId}', '${c.id}')">⏸ Pausieren</button>`
+                                        `<button class="btn btn-success" onclick="enableCampaign('${campaignProvider}', '${campaignCustomerId}', '${c.id}')">▶ Aktivieren</button>` :
+                                        `<button class="btn btn-warning" onclick="pauseCampaign('${campaignProvider}', '${campaignCustomerId}', '${c.id}')">⏸ Pausieren</button>`
                                     }
                                 </td>
                             </tr>
-                        `).join('')}
+                        `}).join('')}
                     </tbody>
                 </table>
             `;
@@ -1104,12 +1436,39 @@
             const total = campaigns.length;
             const active = campaigns.filter(c => c.status === 'enabled').length;
             const paused = campaigns.filter(c => c.status === 'paused').length;
-            const totalBudget = campaigns.reduce((sum, c) => sum + (c.budget_amount_micros || 0), 0);
+            const totalBudget = campaigns.reduce((sum, c) => {
+                const budget = c.budget_amount_micros || (c.budget_amount ? c.budget_amount * 1000000 : 0);
+                return sum + budget;
+            }, 0);
 
             document.getElementById('totalCampaigns').textContent = total;
             document.getElementById('activeCampaigns').textContent = active;
             document.getElementById('pausedCampaigns').textContent = paused;
             document.getElementById('totalBudget').textContent = formatBudget(totalBudget);
+        }
+
+        // Update Stats for All Providers
+        function updateStatsAll() {
+            const googleCampaigns = cachedData.google.campaigns;
+            const metaCampaigns = cachedData.meta.campaigns;
+            const allCampaigns = [...googleCampaigns, ...metaCampaigns];
+
+            const total = allCampaigns.length;
+            const active = allCampaigns.filter(c => c.status === 'enabled').length;
+            const paused = allCampaigns.filter(c => c.status === 'paused').length;
+            const totalBudget = allCampaigns.reduce((sum, c) => {
+                const budget = c.budget_amount_micros || (c.budget_amount ? c.budget_amount * 1000000 : 0);
+                return sum + budget;
+            }, 0);
+
+            document.getElementById('totalCampaigns').textContent = total;
+            document.getElementById('activeCampaigns').textContent = active;
+            document.getElementById('pausedCampaigns').textContent = paused;
+            document.getElementById('totalBudget').textContent = formatBudget(totalBudget);
+
+            // Update sub-values
+            document.getElementById('googleCampaigns').textContent = googleCampaigns.length;
+            document.getElementById('metaCampaigns').textContent = metaCampaigns.length;
         }
 
         // Campaign Actions
@@ -1187,10 +1546,16 @@
 
         // Load Recommendations
         async function loadRecommendations() {
-            const provider = document.getElementById('provider').value;
-            const customerId = document.getElementById('customerId').value;
+            const provider = currentProvider;
+            const customerId = customerIds[provider];
 
-            if (!apiKey || !customerId) return;
+            if (!apiKey || !customerId || provider === 'all') return;
+
+            // Meta doesn't have recommendations API yet
+            if (provider === 'meta') {
+                document.getElementById('recommendationsSection').style.display = 'none';
+                return;
+            }
 
             try {
                 const response = await apiCall(`/api/recommendations/${provider}/${customerId}`);
@@ -1256,8 +1621,8 @@
 
         // Apply Recommendation
         async function applyRecommendation(resourceName) {
-            const provider = document.getElementById('provider').value;
-            const customerId = document.getElementById('customerId').value;
+            const provider = currentProvider;
+            const customerId = customerIds[provider];
 
             try {
                 await fetch(`${API_BASE}/api/recommendations/${provider}/${customerId}/apply`, {
@@ -1278,8 +1643,8 @@
 
         // Dismiss Recommendation
         async function dismissRecommendation(resourceName) {
-            const provider = document.getElementById('provider').value;
-            const customerId = document.getElementById('customerId').value;
+            const provider = currentProvider;
+            const customerId = customerIds[provider];
 
             try {
                 await fetch(`${API_BASE}/api/recommendations/${provider}/${customerId}/dismiss`, {
