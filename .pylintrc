@@ -1,0 +1,13 @@
+[FORMAT]
+max-line-length=160
+
+[MESSAGES CONTROL]
+disable=
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-positional-arguments,
+    invalid-name,
+    import-outside-toplevel,
+    broad-exception-caught,
+    broad-exception-raised,
+    global-statement
