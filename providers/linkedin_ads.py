@@ -43,8 +43,8 @@ class LinkedInAdsProvider(AdsProvider):
     """
 
     provider_name = "linkedin"
-    BASE_URL = "https://api.linkedin.com/rest"
-    API_VERSION = "202402"  # LinkedIn API Versionierung
+    BASE_URL = "https://api.linkedin.com/v2"  # v2 API funktioniert besser
+    API_VERSION = "202402"  # LinkedIn API Versionierung (für REST API)
 
     def __init__(
         self,
@@ -67,8 +67,6 @@ class LinkedInAdsProvider(AdsProvider):
         """Standard Header für LinkedIn API Anfragen"""
         return {
             "Authorization": f"Bearer {self.access_token}",
-            "X-Restli-Protocol-Version": "2.0.0",
-            "LinkedIn-Version": self.API_VERSION,
             "Content-Type": "application/json",
         }
 
@@ -161,13 +159,12 @@ class LinkedInAdsProvider(AdsProvider):
         campaigns = []
 
         try:
-            # LinkedIn verwendet Campaign Groups als Container
+            # v2 API Endpunkt für Kampagnen
             response = await self._client.get(
-                "/adCampaigns",
+                "/adCampaignsV2",
                 params={
                     "q": "search",
-                    "search": f"(account:(values:List(urn:li:sponsoredAccount:{customer_id})))",
-                    "fields": "id,name,status,type,costType,dailyBudget,totalBudget,account,createdAt,lastModifiedAt"
+                    "search.account.values[0]": f"urn:li:sponsoredAccount:{customer_id}",
                 },
                 headers=self._get_headers()
             )
