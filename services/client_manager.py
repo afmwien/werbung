@@ -41,7 +41,7 @@ class ClientManager:
     methods to access client info and filter campaigns by prefix.
     """
 
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: Optional[str] = None):
         self._clients: Dict[str, Client] = {}
         self._config_path = config_path or str(
             Path(__file__).parent.parent / "config" / "clients.json"
@@ -155,7 +155,7 @@ class ClientManager:
 
         Returns client_id or None if no match.
         """
-        for client_id, client in self._clients.items():
+        for client_id, _ in self._clients.items():
             prefix = self.get_campaign_prefix(client_id, platform)
             if prefix and campaign_name.startswith(prefix):
                 return client_id

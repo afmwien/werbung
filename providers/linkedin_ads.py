@@ -61,7 +61,7 @@ class LinkedInAdsProvider(AdsProvider):
         self.access_token = access_token
         self.ad_account_id = ad_account_id
         self._initialized = False
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: "Optional[httpx.AsyncClient]" = None  # type: ignore[valid-type]
 
     def _get_headers(self) -> dict:
         """Standard Header für LinkedIn API Anfragen"""
@@ -247,7 +247,10 @@ class LinkedInAdsProvider(AdsProvider):
             campaign_id = response.headers.get("x-restli-id", "")
 
             # Neue Kampagne abrufen
-            return await self.get_campaign(customer_id, campaign_id)
+            result = await self.get_campaign(customer_id, campaign_id)
+            if result is None:
+                raise LinkedInAdsError(f"Kampagne {campaign_id} konnte nicht abgerufen werden")
+            return result
 
         except LinkedInAdsError:
             raise
@@ -285,7 +288,10 @@ class LinkedInAdsProvider(AdsProvider):
                 if response.status_code not in (200, 204):
                     raise LinkedInAdsError(f"Fehler beim Aktualisieren: {response.text}")
 
-            return await self.get_campaign(customer_id, campaign_id)
+            result = await self.get_campaign(customer_id, campaign_id)
+            if result is None:
+                raise LinkedInAdsError(f"Kampagne {campaign_id} konnte nicht abgerufen werden")
+            return result
 
         except LinkedInAdsError:
             raise
@@ -434,7 +440,11 @@ class LinkedInAdsProvider(AdsProvider):
                 params={
                     "q": "analytics",
                     "pivot": "CAMPAIGN",
-                    "dateRange": f"(start:(year:{start_date[:4]},month:{start_date[5:7]},day:{start_date[8:10]}),end:(year:{end_date[:4]},month:{end_date[5:7]},day:{end_date[8:10]}))",
+                    "dateRange": (
+                        f"(start:(year:{start_date[:4]},month:{start_date[5:7]},"
+                        f"day:{start_date[8:10]}),end:(year:{end_date[:4]},"
+                        f"month:{end_date[5:7]},day:{end_date[8:10]}))"
+                    ),
                     "accounts": f"urn:li:sponsoredAccount:{customer_id}",
                     "fields": "impressions,clicks,costInLocalCurrency,conversions"
                 },
@@ -533,7 +543,7 @@ class LinkedInAdsProvider(AdsProvider):
         # ID extrahieren (kann URN oder direkte ID sein)
         campaign_id = str(li_campaign.get("id", ""))
         if "urn:li:" in campaign_id:
-            campaign_id = campaign_id.split(":")[-1]
+            campaign_id = campaign_id.rsplit(":", maxsplit=1)[-1]
 
         return Campaign(
             id=campaign_id,
@@ -558,7 +568,7 @@ class LinkedInAdsProvider(AdsProvider):
         """LinkedIn Creative zu internem Ad-Modell mappen"""
         creative_id = str(creative.get("id", ""))
         if "urn:li:" in creative_id:
-            creative_id = creative_id.split(":")[-1]
+            creative_id = creative_id.rsplit(":", maxsplit=1)[-1]
 
         status_map = {
             "ACTIVE": AdStatus.ENABLED,

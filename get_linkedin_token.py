@@ -61,6 +61,7 @@ def exchange_code_for_token(authorization_code: str) -> dict:
 
 
 def main():
+    """Interaktiver LinkedIn OAuth 2.0 Token Generator."""
     print("=" * 60)
     print("LinkedIn OAuth 2.0 Token Generator")
     print("=" * 60)

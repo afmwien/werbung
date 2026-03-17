@@ -1,13 +1,34 @@
 """API endpoints for multi-client management."""
-from typing import List, Dict, Any, Optional
+from datetime import datetime, timedelta
+from typing import Dict, Any, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 
 from api.security import verify_api_key
-from services.client_manager import client_manager, Client
+from services.client_manager import client_manager
 from services.ads_manager import AdsManager, get_ads_manager
 
 router = APIRouter(prefix="/clients", tags=["Clients"], dependencies=[Depends(verify_api_key)])
+
+
+def parse_date_range(date_range: str) -> tuple[str, str]:
+    """Konvertiert date_range String zu start_date und end_date."""
+    today = datetime.now()
+
+    if date_range == "LAST_7_DAYS":
+        start = today - timedelta(days=7)
+    elif date_range == "LAST_30_DAYS":
+        start = today - timedelta(days=30)
+    elif date_range == "THIS_MONTH":
+        start = today.replace(day=1)
+    elif date_range == "LAST_MONTH":
+        first_of_month = today.replace(day=1)
+        start = (first_of_month - timedelta(days=1)).replace(day=1)
+        today = first_of_month - timedelta(days=1)
+    else:
+        start = today - timedelta(days=7)
+
+    return start.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")
 
 
 @router.get("/", response_model=Dict[str, Any])
@@ -105,9 +126,9 @@ async def get_client_campaigns(
                     {
                         "id": c.id,
                         "name": c.name,
-                        "status": c.status,
-                        "budget": c.budget,
-                        "currency": c.currency
+                        "status": c.status.value if hasattr(c.status, 'value') else c.status,
+                        "budget": c.budget_euros or c.budget_amount or 0,
+                        "budget_amount_micros": c.budget_amount_micros
                     }
                     for c in client_campaigns
                 ]
@@ -172,8 +193,9 @@ async def get_client_stats(
 
             # Get performance report
             try:
+                start_date, end_date = parse_date_range(date_range)
                 report = await ads_manager.get_performance_report(
-                    plat, account_id, date_range
+                    plat, account_id, start_date, end_date
                 )
 
                 # Filter report data by client campaigns
@@ -186,13 +208,13 @@ async def get_client_stats(
                     "conversions": 0
                 }
 
-                if hasattr(report, 'campaign_metrics'):
-                    for metric in report.campaign_metrics:
-                        if metric.campaign_id in client_campaign_ids:
-                            platform_stats["impressions"] += metric.impressions or 0
-                            platform_stats["clicks"] += metric.clicks or 0
-                            platform_stats["cost"] += metric.cost or 0.0
-                            platform_stats["conversions"] += metric.conversions or 0
+                if hasattr(report, 'campaigns'):
+                    for campaign_perf in report.campaigns:
+                        if campaign_perf.campaign_id in client_campaign_ids:
+                            platform_stats["impressions"] += campaign_perf.metrics.impressions or 0
+                            platform_stats["clicks"] += campaign_perf.metrics.clicks or 0
+                            platform_stats["cost"] += campaign_perf.metrics.cost or 0.0
+                            platform_stats["conversions"] += campaign_perf.metrics.conversions or 0
 
             except Exception:
                 platform_stats = {"impressions": 0, "clicks": 0, "cost": 0.0, "conversions": 0}
