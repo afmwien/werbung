@@ -1,12 +1,20 @@
 """Ads Manager API - FastAPI Application."""
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from config.settings import settings
 from api.campaigns import router as campaigns_router
 from api.ad_groups import router as ad_groups_router
 from api.ads import router as ads_router
 from api.reports import router as reports_router
+
+# Rate Limiter
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -32,13 +40,29 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS Middleware
+# Rate Limiter State
+app.state.limiter = limiter
+
+# Trusted Host Middleware (gegen Host-Header-Angriffe)
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["werbung.afm-software.com", "localhost", "127.0.0.1"]
+)
+
+# Rate Limiting Middleware
+app.add_middleware(SlowAPIMiddleware)
+
+# CORS Middleware (eingeschränkt auf eigene Domains)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In Produktion einschränken!
+    allow_origins=[
+        "https://werbung.afm-software.com",
+        "http://localhost:8001",
+        "http://127.0.0.1:8001"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["X-API-Key", "Content-Type"],
 )
 
 # Router einbinden

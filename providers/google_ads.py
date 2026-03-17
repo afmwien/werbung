@@ -14,7 +14,7 @@ from .base import AdsProvider
 
 
 class GoogleAdsError(Exception):
-    \"\"\"Custom exception for Google Ads API errors.\"\"\"
+    """Custom exception for Google Ads API errors."""
 
 
 # Google Ads API imports
