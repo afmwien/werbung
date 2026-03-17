@@ -1,0 +1,80 @@
+{
+  "afm_screenshot": {
+    "name": "AFM-Screenshot",
+    "short": "AFM",
+    "icon": "📸",
+    "color": "#3B82F6",
+    "description": "Screenshot-Tool für Webseiten",
+    "platforms": {
+      "google": {
+        "customer_id": "2936775113",
+        "campaign_prefix": "[AFM]"
+      },
+      "meta": {
+        "ad_account_id": "act_34886324",
+        "campaign_prefix": "[AFM]"
+      },
+      "linkedin": null
+    }
+  },
+  "rechnungseintreibung": {
+    "name": "Rechnungseintreibung",
+    "short": "RE",
+    "icon": "💰",
+    "color": "#10B981",
+    "description": "Inkasso und Mahnwesen",
+    "platforms": {
+      "google": {
+        "customer_id": "2936775113",
+        "campaign_prefix": "[RE]"
+      },
+      "meta": {
+        "ad_account_id": "act_34886324",
+        "campaign_prefix": "[RE]"
+      },
+      "linkedin": null
+    }
+  },
+  "spr_kanzlei": {
+    "name": "SP-R Kanzlei",
+    "short": "SPR",
+    "icon": "⚖️",
+    "color": "#8B5CF6",
+    "description": "Steinmayr & Pitner Rechtsanwälte",
+    "platforms": {
+      "google": {
+        "customer_id": "2936775113",
+        "campaign_prefix": "[SPR]"
+      },
+      "meta": {
+        "ad_account_id": "act_34886324",
+        "campaign_prefix": "[SPR]"
+      },
+      "linkedin": {
+        "ad_account_id": "519591953",
+        "campaign_prefix": "[SPR]"
+      }
+    }
+  },
+  "911_abfluss": {
+    "name": "911 Abfluss",
+    "short": "911",
+    "icon": "🚿",
+    "color": "#EF4444",
+    "description": "911 abflussreinigung.at GmbH",
+    "platforms": {
+      "google": {
+        "customer_id": "2936775113",
+        "campaign_prefix": "[911]"
+      },
+      "meta": {
+        "ad_account_id": "act_34886324",
+        "campaign_prefix": "[911]"
+      },
+      "linkedin": {
+        "ad_account_id": "519591953",
+        "campaign_prefix": "[911]"
+      }
+    }
+  }
+}

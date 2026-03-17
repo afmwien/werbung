@@ -12,6 +12,7 @@ from api.ad_groups import router as ad_groups_router
 from api.ads import router as ads_router
 from api.reports import router as reports_router
 from api.recommendations import router as recommendations_router
+from api.clients import router as clients_router
 from api.security import verify_ip
 
 # Rate Limiter
@@ -73,6 +74,7 @@ app.include_router(ad_groups_router, prefix="/api")
 app.include_router(ads_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
 app.include_router(recommendations_router, prefix="/api")
+app.include_router(clients_router, prefix="/api")
 
 
 @app.get("/")

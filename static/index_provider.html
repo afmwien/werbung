@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="de" x-data="dashboard()" x-init="init()">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ads Manager</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        google: '#4285f4',
+                        meta: '#0668E1',
+                        linkedin: '#0A66C2',
+                        sidebar: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+        .sidebar-item.active { background: rgba(255,255,255,0.1); }
+    </style>
+</head>
+
+<body class="bg-slate-100 min-h-screen">
+    <!-- Toast Container -->
+    <div class="fixed top-4 right-4 z-50 space-y-2">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div x-show="toast.show"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-x-8"
+                 x-transition:enter-end="opacity-100 transform translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 :class="toast.type === 'success' ? 'bg-green-500' : toast.type === 'error' ? 'bg-red-500' : 'bg-slate-700'"
+                 class="px-4 py-3 rounded-lg text-white shadow-lg flex items-center gap-2">
+                <span x-text="toast.message"></span>
+            </div>
+        </template>
+    </div>
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-sidebar text-white flex flex-col">
+            <!-- Logo -->
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-semibold flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+                    Ads Manager
+                </h1>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-1">
+                <button @click="switchProvider('google')"
+                        :class="{ 'active': provider === 'google' }"
+                        class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left">
+                    <div class="w-8 h-8 bg-google rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">G</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium">Google Ads</div>
+                        <div class="text-xs text-slate-400" x-text="stats.google.campaigns + ' Kampagnen'"></div>
+                    </div>
+                </button>
+
+                <button @click="switchProvider('meta')"
+                        :class="{ 'active': provider === 'meta' }"
+                        class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left">
+                    <div class="w-8 h-8 bg-meta rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">M</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium">Meta Ads</div>
+                        <div class="text-xs text-slate-400" x-text="stats.meta.campaigns + ' Kampagnen'"></div>
+                    </div>
+                </button>
+
+                <button @click="switchProvider('linkedin')"
+                        :class="{ 'active': provider === 'linkedin' }"
+                        class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left">
+                    <div class="w-8 h-8 bg-linkedin rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">in</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium">LinkedIn Ads</div>
+                        <div class="text-xs text-slate-400" x-text="stats.linkedin.campaigns + ' Kampagnen'"></div>
+                    </div>
+                </button>
+
+                <button @click="switchProvider('all')"
+                        :class="{ 'active': provider === 'all' }"
+                        class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left">
+                    <div class="w-8 h-8 bg-gradient-to-br from-google via-meta to-linkedin rounded-lg flex items-center justify-center">
+                        <i data-lucide="layers" class="w-4 h-4"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium">Gesamtübersicht</div>
+                        <div class="text-xs text-slate-400">Alle Plattformen</div>
+                    </div>
+                </button>
+            </nav>
+
+            <!-- Settings -->
+            <div class="p-4 border-t border-slate-700">
+                <button @click="showSettings = true"
+                        class="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors text-slate-400 hover:text-white">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>Einstellungen</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto">
+            <!-- Header -->
+            <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+                <div>
+                    <h2 class="text-2xl font-semibold text-slate-800" x-text="providerTitle"></h2>
+                    <p class="text-sm text-slate-500" x-text="'Aktualisiert: ' + lastUpdate"></p>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <!-- Customer ID Input -->
+                    <div class="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-2" x-show="provider !== 'all'">
+                        <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
+                        <input type="text"
+                               x-model="customerIds[provider]"
+                               @change="saveCustomerIds()"
+                               class="bg-transparent border-none outline-none text-sm w-40"
+                               placeholder="Kunden-ID">
+                    </div>
+
+                    <!-- Refresh Button -->
+                    <button @click="loadData()"
+                            :disabled="loading"
+                            class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50">
+                        <i data-lucide="refresh-cw" class="w-4 h-4" :class="{ 'animate-spin': loading }"></i>
+                        <span>Aktualisieren</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div class="p-8">
+                <!-- API Key Warning -->
+                <div x-show="!apiKey" class="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="key" class="w-5 h-5 text-amber-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-amber-800">API-Key erforderlich</h3>
+                            <p class="text-amber-700 text-sm mt-1">Bitte gib deinen API-Key in den Einstellungen ein, um fortzufahren.</p>
+                            <button @click="showSettings = true" class="mt-3 text-sm font-medium text-amber-800 hover:text-amber-900 flex items-center gap-1">
+                                Einstellungen öffnen
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-medium text-slate-500">Kampagnen</span>
+                            <div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="megaphone" class="w-5 h-5 text-slate-600"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-800" x-text="currentStats.total"></div>
+                        <div class="mt-2 flex gap-4 text-sm" x-show="provider === 'all'">
+                            <span class="flex items-center gap-1">
+                                <span class="w-2 h-2 bg-google rounded-full"></span>
+                                <span x-text="stats.google.campaigns"></span>
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <span class="w-2 h-2 bg-meta rounded-full"></span>
+                                <span x-text="stats.meta.campaigns"></span>
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <span class="w-2 h-2 bg-linkedin rounded-full"></span>
+                                <span x-text="stats.linkedin.campaigns"></span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-medium text-slate-500">Aktiv</span>
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="play-circle" class="w-5 h-5 text-green-600"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-green-600" x-text="currentStats.active"></div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-medium text-slate-500">Pausiert</span>
+                            <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="pause-circle" class="w-5 h-5 text-amber-600"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-amber-600" x-text="currentStats.paused"></div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-medium text-slate-500">Tagesbudget</span>
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="euro" class="w-5 h-5 text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-800" x-text="formatCurrency(currentStats.budget)"></div>
+                    </div>
+                </div>
+
+                <!-- Performance Section -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-8" x-show="provider !== 'all' && campaigns.length > 0">
+                    <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5"></i>
+                            Performance
+                        </h3>
+                        <div class="flex items-center gap-3">
+                            <input type="date" x-model="dateRange.start" class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm">
+                            <span class="text-slate-400">bis</span>
+                            <input type="date" x-model="dateRange.end" class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm">
+                            <button @click="loadPerformance()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm transition-colors">
+                                Anwenden
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Performance Stats -->
+                    <div class="grid grid-cols-2 md:grid-cols-6 gap-4 p-6 bg-slate-50 border-b border-slate-200">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-slate-800" x-text="formatNumber(performance.impressions)"></div>
+                            <div class="text-xs text-slate-500 uppercase tracking-wide">Impressionen</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-slate-800" x-text="formatNumber(performance.clicks)"></div>
+                            <div class="text-xs text-slate-500 uppercase tracking-wide">Klicks</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-slate-800" x-text="formatPercent(performance.ctr)"></div>
+                            <div class="text-xs text-slate-500 uppercase tracking-wide">CTR</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-slate-800" x-text="formatCurrency(performance.cost)"></div>
+                            <div class="text-xs text-slate-500 uppercase tracking-wide">Kosten</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-slate-800" x-text="formatNumber(performance.conversions)"></div>
+                            <div class="text-xs text-slate-500 uppercase tracking-wide">Conversions</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-slate-800" x-text="performance.conversions > 0 ? formatCurrency(performance.cost / performance.conversions) : '-'"></div>
+                            <div class="text-xs text-slate-500 uppercase tracking-wide">CPA</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="grid md:grid-cols-2 gap-6 p-6">
+                        <div>
+                            <h4 class="text-sm font-medium text-slate-600 mb-4">Impressionen & Klicks</h4>
+                            <div class="h-64">
+                                <canvas id="clicksChart"></canvas>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-slate-600 mb-4">Kosten & Conversions</h4>
+                            <div class="h-64">
+                                <canvas id="costChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campaigns Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                    <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="list" class="w-5 h-5"></i>
+                            Kampagnen
+                        </h3>
+                        <span class="text-sm text-slate-500" x-text="campaigns.length + ' Einträge'"></span>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div x-show="loading" class="p-12 text-center">
+                        <div class="inline-flex items-center gap-2 text-slate-500">
+                            <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
+                            <span>Lade Kampagnen...</span>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div x-show="!loading && campaigns.length === 0" class="p-12 text-center">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="inbox" class="w-8 h-8 text-slate-400"></i>
+                        </div>
+                        <h4 class="font-medium text-slate-600">Keine Kampagnen gefunden</h4>
+                        <p class="text-sm text-slate-400 mt-1">Prüfe die Kunden-ID und lade erneut</p>
+                    </div>
+
+                    <!-- Table -->
+                    <div x-show="!loading && campaigns.length > 0" class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200">
+                                    <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kampagne</th>
+                                    <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                                    <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Typ</th>
+                                    <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Budget</th>
+                                    <th class="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200">
+                                <template x-for="campaign in campaigns" :key="campaign.id">
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <div x-show="provider === 'all'"
+                                                     :class="campaign._provider === 'google' ? 'bg-google' : campaign._provider === 'meta' ? 'bg-meta' : 'bg-linkedin'"
+                                                     class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold">
+                                                    <span x-text="campaign._provider === 'google' ? 'G' : campaign._provider === 'meta' ? 'M' : 'in'"></span>
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium text-slate-800" x-text="campaign.name"></div>
+                                                    <div class="text-xs text-slate-400" x-text="'ID: ' + campaign.id"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span :class="{
+                                                'bg-green-100 text-green-700': campaign.status === 'enabled',
+                                                'bg-amber-100 text-amber-700': campaign.status === 'paused',
+                                                'bg-red-100 text-red-700': campaign.status === 'removed'
+                                            }" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium">
+                                                <span class="w-1.5 h-1.5 rounded-full" :class="{
+                                                    'bg-green-500': campaign.status === 'enabled',
+                                                    'bg-amber-500': campaign.status === 'paused',
+                                                    'bg-red-500': campaign.status === 'removed'
+                                                }"></span>
+                                                <span x-text="campaign.status === 'enabled' ? 'Aktiv' : campaign.status === 'paused' ? 'Pausiert' : 'Entfernt'"></span>
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded" x-text="formatCampaignType(campaign.campaign_type)"></span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="font-medium text-slate-800" x-text="formatBudget(campaign)"></span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button x-show="campaign.status === 'paused'"
+                                                    @click="enableCampaign(campaign)"
+                                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors">
+                                                <i data-lucide="play" class="w-3 h-3"></i>
+                                                Aktivieren
+                                            </button>
+                                            <button x-show="campaign.status === 'enabled'"
+                                                    @click="pauseCampaign(campaign)"
+                                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg transition-colors">
+                                                <i data-lucide="pause" class="w-3 h-3"></i>
+                                                Pausieren
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div x-show="showSettings" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div x-show="showSettings"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 @click="showSettings = false"
+                 class="fixed inset-0 bg-black/50"></div>
+
+            <div x-show="showSettings"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-slate-800">Einstellungen</h3>
+                    <button @click="showSettings = false" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-5 h-5 text-slate-500"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">API-Key</label>
+                        <input type="password"
+                               x-model="apiKeyInput"
+                               @input="apiKeyChanged = true"
+                               class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                               placeholder="API-Key eingeben...">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Google Ads Kunden-ID</label>
+                        <input type="text"
+                               x-model="customerIds.google"
+                               class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                               placeholder="z.B. 2936775113">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Meta Ad Account ID</label>
+                        <input type="text"
+                               x-model="customerIds.meta"
+                               class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                               placeholder="z.B. act_34886324">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">LinkedIn Ad Account ID</label>
+                        <input type="text"
+                               x-model="customerIds.linkedin"
+                               class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                               placeholder="z.B. 508123456">
+                    </div>
+                </div>
+
+                <div class="mt-6 flex gap-3">
+                    <button @click="showSettings = false" class="flex-1 px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+                        Abbrechen
+                    </button>
+                    <button @click="saveSettings()" class="flex-1 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors">
+                        Speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function dashboard() {
+            return {
+                // State
+                provider: 'google',
+                loading: false,
+                showSettings: false,
+                apiKey: localStorage.getItem('adsManagerApiKey') || '',
+                apiKeyInput: '',
+                apiKeyChanged: false,
+                customerIds: {
+                    google: localStorage.getItem('googleCustomerId') || '2936775113',
+                    meta: localStorage.getItem('metaCustomerId') || 'act_34886324',
+                    linkedin: localStorage.getItem('linkedinCustomerId') || ''
+                },
+                campaigns: [],
+                cachedCampaigns: {
+                    google: [],
+                    meta: [],
+                    linkedin: []
+                },
+                stats: {
+                    google: { campaigns: 0, active: 0, paused: 0, budget: 0 },
+                    meta: { campaigns: 0, active: 0, paused: 0, budget: 0 },
+                    linkedin: { campaigns: 0, active: 0, paused: 0, budget: 0 }
+                },
+                performance: {
+                    impressions: 0,
+                    clicks: 0,
+                    ctr: 0,
+                    cost: 0,
+                    conversions: 0
+                },
+                dateRange: {
+                    start: '',
+                    end: ''
+                },
+                lastUpdate: '-',
+                toasts: [],
+                clicksChart: null,
+                costChart: null,
+
+                // Computed
+                get providerTitle() {
+                    const titles = {
+                        google: 'Google Ads',
+                        meta: 'Meta Ads',
+                        linkedin: 'LinkedIn Ads',
+                        all: 'Gesamtübersicht'
+                    };
+                    return titles[this.provider];
+                },
+
+                get currentStats() {
+                    if (this.provider === 'all') {
+                        return {
+                            total: this.stats.google.campaigns + this.stats.meta.campaigns + this.stats.linkedin.campaigns,
+                            active: this.stats.google.active + this.stats.meta.active + this.stats.linkedin.active,
+                            paused: this.stats.google.paused + this.stats.meta.paused + this.stats.linkedin.paused,
+                            budget: this.stats.google.budget + this.stats.meta.budget + this.stats.linkedin.budget
+                        };
+                    }
+                    return {
+                        total: this.stats[this.provider].campaigns,
+                        active: this.stats[this.provider].active,
+                        paused: this.stats[this.provider].paused,
+                        budget: this.stats[this.provider].budget
+                    };
+                },
+
+                // Init
+                init() {
+                    // Set default date range (last 30 days)
+                    const today = new Date();
+                    const thirtyDaysAgo = new Date(today);
+                    thirtyDaysAgo.setDate(today.getDate() - 30);
+                    this.dateRange.end = this.formatDateForInput(today);
+                    this.dateRange.start = this.formatDateForInput(thirtyDaysAgo);
+
+                    // Mask API key in input
+                    if (this.apiKey) {
+                        this.apiKeyInput = '••••••••••••••••';
+                    }
+
+                    // Initialize Lucide icons
+                    this.$nextTick(() => {
+                        lucide.createIcons();
+                    });
+
+                    // Load data if API key exists
+                    if (this.apiKey) {
+                        this.loadData();
+                    }
+                },
+
+                // Methods
+                switchProvider(provider) {
+                    this.provider = provider;
+                    if (provider === 'all') {
+                        this.campaigns = [
+                            ...this.cachedCampaigns.google.map(c => ({...c, _provider: 'google'})),
+                            ...this.cachedCampaigns.meta.map(c => ({...c, _provider: 'meta'})),
+                            ...this.cachedCampaigns.linkedin.map(c => ({...c, _provider: 'linkedin'}))
+                        ];
+                    } else {
+                        this.campaigns = this.cachedCampaigns[provider].map(c => ({...c, _provider: provider}));
+                    }
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                async loadData() {
+                    if (!this.apiKey) {
+                        this.showSettings = true;
+                        return;
+                    }
+
+                    this.loading = true;
+
+                    try {
+                        // Load all providers
+                        await Promise.all([
+                            this.loadProviderCampaigns('google'),
+                            this.loadProviderCampaigns('meta'),
+                            this.loadProviderCampaigns('linkedin')
+                        ]);
+
+                        // Set current campaigns
+                        this.switchProvider(this.provider);
+
+                        // Load performance if not 'all'
+                        if (this.provider !== 'all') {
+                            await this.loadPerformance();
+                        }
+
+                        this.lastUpdate = new Date().toLocaleTimeString('de-DE');
+                        this.toast('Daten aktualisiert', 'success');
+                    } catch (error) {
+                        this.toast(error.message, 'error');
+                    } finally {
+                        this.loading = false;
+                        this.$nextTick(() => lucide.createIcons());
+                    }
+                },
+
+                async loadProviderCampaigns(provider) {
+                    const customerId = this.customerIds[provider];
+                    if (!customerId) return;
+
+                    try {
+                        const response = await fetch(`/api/campaigns/${provider}/${customerId}`, {
+                            headers: { 'X-API-Key': this.apiKey }
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.detail || 'API-Fehler');
+                        }
+
+                        const campaigns = await response.json();
+                        this.cachedCampaigns[provider] = campaigns;
+
+                        // Update stats
+                        const budget = campaigns.reduce((sum, c) => {
+                            const b = c.budget_amount_micros || (c.budget_amount ? c.budget_amount * 1000000 : 0);
+                            return sum + b;
+                        }, 0);
+
+                        this.stats[provider] = {
+                            campaigns: campaigns.length,
+                            active: campaigns.filter(c => c.status === 'enabled').length,
+                            paused: campaigns.filter(c => c.status === 'paused').length,
+                            budget: budget / 1000000
+                        };
+                    } catch (error) {
+                        console.error(`Error loading ${provider}:`, error);
+                        this.cachedCampaigns[provider] = [];
+                        this.stats[provider] = { campaigns: 0, active: 0, paused: 0, budget: 0 };
+                    }
+                },
+
+                async loadPerformance() {
+                    if (this.provider === 'all') return;
+
+                    const customerId = this.customerIds[this.provider];
+                    if (!customerId) return;
+
+                    try {
+                        const response = await fetch(
+                            `/api/reports/${this.provider}/${customerId}/performance?start_date=${this.dateRange.start}&end_date=${this.dateRange.end}`,
+                            { headers: { 'X-API-Key': this.apiKey } }
+                        );
+
+                        if (!response.ok) return;
+
+                        const report = await response.json();
+                        const totals = report.total_metrics || {};
+
+                        const costEur = (totals.cost_micros || 0) / 1000000;
+                        const ctr = totals.impressions > 0 ? totals.clicks / totals.impressions : 0;
+
+                        this.performance = {
+                            impressions: totals.impressions || 0,
+                            clicks: totals.clicks || 0,
+                            ctr: ctr,
+                            cost: costEur,
+                            conversions: totals.conversions || 0
+                        };
+
+                        this.renderCharts(report);
+                    } catch (error) {
+                        console.error('Performance error:', error);
+                    }
+                },
+
+                renderCharts(report) {
+                    const campaigns = report.campaigns || [];
+                    const labels = campaigns.map(c => this.truncate(c.campaign_name, 15));
+                    const impressions = campaigns.map(c => c.metrics?.impressions || 0);
+                    const clicks = campaigns.map(c => c.metrics?.clicks || 0);
+                    const costs = campaigns.map(c => (c.metrics?.cost_micros || 0) / 1000000);
+                    const conversions = campaigns.map(c => c.metrics?.conversions || 0);
+
+                    // Destroy existing charts
+                    if (this.clicksChart) this.clicksChart.destroy();
+                    if (this.costChart) this.costChart.destroy();
+
+                    // Clicks Chart
+                    const clicksCtx = document.getElementById('clicksChart');
+                    if (clicksCtx) {
+                        this.clicksChart = new Chart(clicksCtx, {
+                            type: 'bar',
+                            data: {
+                                labels,
+                                datasets: [
+                                    { label: 'Impressionen', data: impressions, backgroundColor: 'rgba(66, 133, 244, 0.7)', yAxisID: 'y' },
+                                    { label: 'Klicks', data: clicks, backgroundColor: 'rgba(52, 168, 83, 0.7)', yAxisID: 'y1' }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: { type: 'linear', position: 'left' },
+                                    y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } }
+                                }
+                            }
+                        });
+                    }
+
+                    // Cost Chart
+                    const costCtx = document.getElementById('costChart');
+                    if (costCtx) {
+                        this.costChart = new Chart(costCtx, {
+                            type: 'bar',
+                            data: {
+                                labels,
+                                datasets: [
+                                    { label: 'Kosten (€)', data: costs, backgroundColor: 'rgba(251, 188, 4, 0.7)', yAxisID: 'y' },
+                                    { label: 'Conversions', data: conversions, backgroundColor: 'rgba(234, 67, 53, 0.7)', yAxisID: 'y1' }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: { type: 'linear', position: 'left' },
+                                    y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } }
+                                }
+                            }
+                        });
+                    }
+                },
+
+                async pauseCampaign(campaign) {
+                    const provider = campaign._provider || this.provider;
+                    const customerId = this.customerIds[provider];
+
+                    try {
+                        const response = await fetch(`/api/campaigns/${provider}/${customerId}/${campaign.id}/pause`, {
+                            method: 'POST',
+                            headers: { 'X-API-Key': this.apiKey }
+                        });
+
+                        if (!response.ok) throw new Error('Fehler beim Pausieren');
+
+                        this.toast('Kampagne pausiert', 'success');
+                        this.loadData();
+                    } catch (error) {
+                        this.toast(error.message, 'error');
+                    }
+                },
+
+                async enableCampaign(campaign) {
+                    const provider = campaign._provider || this.provider;
+                    const customerId = this.customerIds[provider];
+
+                    try {
+                        const response = await fetch(`/api/campaigns/${provider}/${customerId}/${campaign.id}/enable`, {
+                            method: 'POST',
+                            headers: { 'X-API-Key': this.apiKey }
+                        });
+
+                        if (!response.ok) throw new Error('Fehler beim Aktivieren');
+
+                        this.toast('Kampagne aktiviert', 'success');
+                        this.loadData();
+                    } catch (error) {
+                        this.toast(error.message, 'error');
+                    }
+                },
+
+                saveSettings() {
+                    // Save API Key if changed
+                    if (this.apiKeyChanged && this.apiKeyInput && !this.apiKeyInput.includes('•')) {
+                        this.apiKey = this.apiKeyInput;
+                        localStorage.setItem('adsManagerApiKey', this.apiKey);
+                        this.apiKeyInput = '••••••••••••••••';
+                        this.apiKeyChanged = false;
+                    }
+
+                    // Save Customer IDs
+                    this.saveCustomerIds();
+
+                    this.showSettings = false;
+                    this.toast('Einstellungen gespeichert', 'success');
+
+                    if (this.apiKey) {
+                        this.loadData();
+                    }
+                },
+
+                saveCustomerIds() {
+                    localStorage.setItem('googleCustomerId', this.customerIds.google);
+                    localStorage.setItem('metaCustomerId', this.customerIds.meta);
+                    localStorage.setItem('linkedinCustomerId', this.customerIds.linkedin);
+                },
+
+                // Helpers
+                formatCurrency(value) {
+                    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value || 0);
+                },
+
+                formatNumber(value) {
+                    return new Intl.NumberFormat('de-DE').format(value || 0);
+                },
+
+                formatPercent(value) {
+                    return (value * 100).toFixed(2) + '%';
+                },
+
+                formatBudget(campaign) {
+                    const micros = campaign.budget_amount_micros || (campaign.budget_amount ? campaign.budget_amount * 1000000 : 0);
+                    return this.formatCurrency(micros / 1000000);
+                },
+
+                formatCampaignType(type) {
+                    const types = {
+                        'search': 'Search', 'display': 'Display', 'video': 'Video',
+                        'shopping': 'Shopping', 'performance_max': 'PMax',
+                        'discovery': 'Discovery', 'app': 'App', 'unknown': 'Unbekannt'
+                    };
+                    return types[type] || type;
+                },
+
+                formatDateForInput(date) {
+                    return date.toISOString().split('T')[0];
+                },
+
+                truncate(str, len) {
+                    return str && str.length > len ? str.substring(0, len) + '...' : str;
+                },
+
+                toast(message, type = 'info') {
+                    const id = Date.now();
+                    this.toasts.push({ id, message, type, show: true });
+                    setTimeout(() => {
+                        const toast = this.toasts.find(t => t.id === id);
+                        if (toast) toast.show = false;
+                        setTimeout(() => {
+                            this.toasts = this.toasts.filter(t => t.id !== id);
+                        }, 300);
+                    }, 3000);
+                }
+            };
+        }
+    </script>
+</body>
+</html>
