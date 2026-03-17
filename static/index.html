@@ -412,6 +412,7 @@
                 apiKeyChanged: false,
                 clients: [],
                 clientsData: {},
+                allCampaignsData: {},
                 campaigns: [],
                 lastUpdate: '-',
                 toasts: [],
@@ -431,14 +432,22 @@
 
                 get currentStats() {
                     if (this.selectedClient === 'all') {
+                        // Calculate stats from all unfiltered campaigns
                         let stats = { total: 0, active: 0, paused: 0, budget: 0, platforms: {} };
-                        for (const clientId in this.clientsData) {
-                            const data = this.clientsData[clientId];
-                            if (data.stats) {
-                                stats.total += data.stats.total || 0;
-                                stats.active += data.stats.active || 0;
-                                stats.paused += data.stats.paused || 0;
-                                stats.budget += data.stats.budget || 0;
+                        const normalizeStatus = (s) => (s || '').toLowerCase();
+
+                        for (const platform in this.allCampaignsData) {
+                            const campaigns = this.allCampaignsData[platform] || [];
+                            stats.total += campaigns.length;
+                            stats.active += campaigns.filter(c => normalizeStatus(c.status) === 'enabled').length;
+                            stats.paused += campaigns.filter(c => normalizeStatus(c.status) === 'paused').length;
+                            stats.budget += campaigns.reduce((sum, c) => sum + (c.budget || 0), 0);
+
+                            if (campaigns.length > 0) {
+                                stats.platforms[platform] = {
+                                    count: campaigns.length,
+                                    active: campaigns.filter(c => normalizeStatus(c.status) === 'enabled').length
+                                };
                             }
                         }
                         return stats;
@@ -559,7 +568,12 @@
                     this.loading = true;
 
                     try {
+                        // Load filtered campaigns per client
                         await Promise.all(this.clients.map(client => this.loadClientData(client.id)));
+
+                        // Load all unfiltered campaigns for "Gesamtübersicht"
+                        await this.loadAllCampaigns();
+
                         this.updateDisplayedCampaigns();
                         this.lastUpdate = new Date().toLocaleTimeString('de-DE');
                         this.toast('Daten aktualisiert', 'success');
@@ -569,6 +583,40 @@
                         this.loading = false;
                         this.$nextTick(() => lucide.createIcons());
                     }
+                },
+
+                async loadAllCampaigns() {
+                    // Load all campaigns without prefix filtering
+                    const allCampaigns = { google: [], meta: [], linkedin: [] };
+                    const accounts = {
+                        google: '2936775113',
+                        meta: 'act_34886324',
+                        linkedin: '519591953'
+                    };
+
+                    for (const [platform, accountId] of Object.entries(accounts)) {
+                        try {
+                            const response = await fetch(`/api/campaigns/${platform}/${accountId}`, {
+                                headers: { 'X-API-Key': this.apiKey }
+                            });
+                            if (response.ok) {
+                                const campaigns = await response.json();
+                                allCampaigns[platform] = campaigns.map(c => ({
+                                    ...c,
+                                    _platform: platform,
+                                    _clientId: 'all',
+                                    _clientName: 'Alle',
+                                    _clientIcon: '🌐',
+                                    _clientColor: '#6B7280',
+                                    _accountId: accountId
+                                }));
+                            }
+                        } catch (e) {
+                            console.error(`Error loading ${platform}:`, e);
+                        }
+                    }
+
+                    this.allCampaignsData = allCampaigns;
                 },
 
                 async loadClientData(clientId) {
@@ -628,12 +676,10 @@
 
                 updateDisplayedCampaigns() {
                     if (this.selectedClient === 'all') {
+                        // Use all unfiltered campaigns for Gesamtübersicht
                         this.campaigns = [];
-                        for (const clientId in this.clientsData) {
-                            const data = this.clientsData[clientId];
-                            for (const platform in data.campaigns) {
-                                this.campaigns.push(...data.campaigns[platform]);
-                            }
+                        for (const platform in this.allCampaignsData) {
+                            this.campaigns.push(...(this.allCampaignsData[platform] || []));
                         }
                     } else {
                         const data = this.clientsData[this.selectedClient];
