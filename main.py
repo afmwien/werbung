@@ -1,5 +1,5 @@
 """Ads Manager API - FastAPI Application."""
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
@@ -12,6 +12,7 @@ from api.ad_groups import router as ad_groups_router
 from api.ads import router as ads_router
 from api.reports import router as reports_router
 from api.recommendations import router as recommendations_router
+from api.security import verify_ip
 
 # Rate Limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -19,6 +20,7 @@ limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
+    dependencies=[Depends(verify_ip)],
     description="""
     ## Ads Manager API
 
@@ -80,8 +82,8 @@ async def root():
 
 
 @app.get("/dashboard")
-async def dashboard():
-    """Dashboard UI"""
+async def dashboard(_ip: str = Depends(verify_ip)):
+    """Dashboard UI – nur für erlaubte IPs"""
     return FileResponse("static/index.html")
 
 

@@ -1,0 +1,533 @@
+================================================================================
+AUTO-OPTIMIERUNG – Selbstlernende Werbesteuerung
+================================================================================
+Stand: 17. März 2026
+Projekt: rechnungseintreibung.at (B2B Inkasso)
+System: werbung.afm-software.com
+================================================================================
+
+
+1. ÜBERBLICK
+────────────────────────────────────────────────────────────────────────────────
+
+Ziel:            Automatisches Monitoring und Optimierung der Google Ads
+                 Kampagnen ohne manuelles Eingreifen.
+
+Prinzip:         Das System prüft 2x täglich alle Kampagnen-Daten,
+                 erkennt Probleme und Chancen, und passt Gebote,
+                 Keywords und Budgets selbstständig an.
+
+Sicherheit:      Jede automatische Aktion hat Grenzen (Hard-Limits).
+                 Kritische Änderungen werden nur vorgeschlagen,
+                 nicht automatisch ausgeführt.
+
+Wo läuft es:     Als Scheduled Job auf dem bestehenden Server
+                 (werbung.afm-software.com)
+
+
+2. DREI AUTOMATISIERUNGS-EBENEN
+────────────────────────────────────────────────────────────────────────────────
+
+EBENE 1: GOOGLE SMART BIDDING (bereits eingebaut)
+──────────────────────────────────────────────────
+
+   Was es tut:
+   - Google's eigene KI optimiert Gebote in Echtzeit
+   - Analysiert hunderte Signale pro Auktion (Gerät, Standort,
+     Tageszeit, Suchverhalten, Browser etc.)
+   - Passt CPC automatisch pro Suchanfrage an
+
+   Wann aktiv:
+   - Phase 1 (Woche 1–4): "Klicks maximieren" mit max. CPC 2,50 EUR
+   - Phase 2 (Woche 5–8): "Conversions maximieren"
+   - Phase 3 (ab Woche 9): "Ziel-CPA" (Target CPA 30–40 EUR)
+
+   Was wir tun müssen:
+   - Nichts. Google macht das automatisch.
+   - Umstellung von Phase 1 → 2 → 3 kann das Auto-System übernehmen.
+
+
+EBENE 2: GOOGLE RECOMMENDATIONS API (bereits gebaut)
+─────────────────────────────────────────────────────
+
+   Was es tut:
+   - Google analysiert den Account und gibt KI-Empfehlungen
+   - Empfehlungen wie: "Budget erhöhen", "Keyword hinzufügen",
+     "Bidding-Strategie ändern", "Anzeige verbessern"
+   - Jede Empfehlung kommt mit Impact-Prognose
+
+   Was bereits existiert:
+   - API-Endpoint: GET /api/recommendations/google/{customer_id}
+   - Dashboard-Sektion: "KI-Empfehlungen" mit Anwenden/Ablehnen
+   - Optimierungsgrad (0–100%) wird angezeigt
+
+   Was das Auto-System hinzufügt:
+   - Sichere Empfehlungen automatisch anwenden (z.B. Keyword-Vorschläge)
+   - Risikoreiche Empfehlungen nur als Benachrichtigung senden
+   - Täglicher Check ob neue Empfehlungen vorliegen
+
+
+EBENE 3: EIGENE AUTO-OPTIMIERUNG (NEU ZU BAUEN)
+────────────────────────────────────────────────
+
+   Was es tut:
+   - Eigene Regeln die über Google's Automatik hinausgehen
+   - Maßgeschneidert auf das B2B-Inkasso-Geschäftsmodell
+   - Vollständige Kontrolle über Logik und Grenzen
+
+   Details siehe Abschnitt 3–8 unten.
+
+
+3. AUTOMATISCHE REGELN (REGEL-ENGINE)
+────────────────────────────────────────────────────────────────────────────────
+
+Jede Regel hat:
+   - BEDINGUNG:  Wann wird die Regel ausgelöst?
+   - AKTION:     Was passiert automatisch?
+   - LIMIT:      Maximale Änderung pro Durchlauf
+   - COOLDOWN:   Wie lange warten bis die Regel erneut greift?
+
+──────────────────────────────────────────────────────────────────────────────
+
+REGEL 1: SCHLECHTE KEYWORDS PAUSIEREN
+──────────────────────────────────────
+
+   Bedingung:   Keyword hat mehr als 50 Klicks
+                UND 0 Conversions
+                UND Kosten > 75 EUR
+
+   Aktion:      Keyword auf PAUSED setzen
+
+   Limit:       Maximal 3 Keywords pro Tag pausieren
+
+   Cooldown:    24 Stunden
+
+   Warum:       Ein Keyword das nach 50+ Klicks keine Conversion bringt,
+                verbrennt Budget. Besser pausieren und Budget auf
+                funktionierende Keywords umleiten.
+
+──────────────────────────────────────────────────────────────────────────────
+
+REGEL 2: GUTE KEYWORDS VERSTÄRKEN
+──────────────────────────────────
+
+   Bedingung:   Keyword hat mehr als 5 Conversions
+                UND CPA < Ziel-CPA (30 EUR)
+                UND Impression Share < 80%
+
+   Aktion:      Max. CPC um 15% erhöhen
+
+   Limit:       Gebot darf max. 5,00 EUR erreichen
+                Max. 3 Keywords pro Tag anpassen
+
+   Cooldown:    48 Stunden pro Keyword
+
+   Warum:       Keywords die gut konvertieren aber nicht bei jeder
+                Suche angezeigt werden (Impression Share < 80%),
+                haben Wachstumspotential.
+
+──────────────────────────────────────────────────────────────────────────────
+
+REGEL 3: ANZEIGEN MIT SCHLECHTER CTR PAUSIEREN
+───────────────────────────────────────────────
+
+   Bedingung:   Anzeige hat mehr als 1.000 Impressionen
+                UND CTR < 1,0%
+
+   Aktion:      Anzeige auf PAUSED setzen
+                + Benachrichtigung: "Anzeige XY pausiert wegen CTR < 1%"
+
+   Limit:       Nie die letzte aktive Anzeige einer Gruppe pausieren
+
+   Cooldown:    7 Tage
+
+   Warum:       Eine niedrige CTR bedeutet dass die Anzeige nicht
+                ansprechend ist. Schlechte CTR senkt auch den
+                Qualitätsfaktor und erhöht die Kosten.
+
+──────────────────────────────────────────────────────────────────────────────
+
+REGEL 4: BUDGET UMVERTEILEN
+────────────────────────────
+
+   Bedingung:   Anzeigengruppe A hat CPA > 50 EUR (zu teuer)
+                UND Anzeigengruppe B hat CPA < 25 EUR (günstig)
+
+   Aktion:      Budget-Empfehlung erstellen:
+                "Anzeigengruppe A: Budget reduzieren"
+                "Anzeigengruppe B: Budget erhöhen"
+
+   Limit:       Budget-Änderung max. ±20% pro Anpassung
+                Gesamtbudget bleibt gleich (nur Umverteilung)
+
+   Cooldown:    7 Tage
+
+   Warum:       Geld dorthin verschieben wo es am besten wirkt.
+                Kein zusätzliches Budget nötig.
+
+──────────────────────────────────────────────────────────────────────────────
+
+REGEL 5: SUCHBEGRIFFE PRÜFEN (NEGATIVE KEYWORDS)
+─────────────────────────────────────────────────
+
+   Bedingung:   Suchbegriff-Bericht enthält Begriffe die nicht
+                zum B2B-Fokus passen (z.B. "privat", "miete",
+                "nachbar", "alimente", "scheidung")
+
+   Aktion:      Automatisch als Negative Keyword hinzufügen
+
+   Limit:       Max. 10 neue Negative Keywords pro Tag
+
+   Cooldown:    24 Stunden
+
+   Warum:       Verhindert dass Budget für irrelevante Suchanfragen
+                (insbesondere B2C/Privat-Anfragen) ausgegeben wird.
+
+   Prüfliste (automatisch als negativ markieren wenn enthalten):
+     - privat, privatkunde, privatperson
+     - miete, mieter, vermieter
+     - nachbar, nachbarschaft
+     - scheidung, unterhalt, alimente
+     - student, schüler
+     - gratis, kostenlos, umsonst
+     - job, stelle, karriere, gehalt
+     - beschwerde, erfahrung, bewertung
+
+──────────────────────────────────────────────────────────────────────────────
+
+REGEL 6: BIDDING-STRATEGIE AUTOMATISCH UMSTELLEN
+─────────────────────────────────────────────────
+
+   Bedingung Phase 1→2:
+     Kampagne läuft seit mindestens 28 Tagen
+     UND mindestens 15 Conversions in den letzten 30 Tagen
+     UND aktuelle Strategie = "Klicks maximieren"
+
+   Aktion:      Bidding-Strategie auf "Conversions maximieren" umstellen
+
+   Bedingung Phase 2→3:
+     Kampagne läuft seit mindestens 56 Tagen
+     UND mindestens 30 Conversions in den letzten 30 Tagen
+     UND CPA ist stabil (Schwankung < 20% über 2 Wochen)
+
+   Aktion:      Bidding-Strategie auf "Ziel-CPA" umstellen
+                Ziel-CPA = Durchschnitts-CPA der letzten 30 Tage × 1,1
+
+   Limit:       Nur nach Bestätigung per E-Mail (nicht vollautomatisch)
+
+   Cooldown:    30 Tage
+
+   Warum:       Die Umstellung auf Smart Bidding zum richtigen Zeitpunkt
+                ist entscheidend. Zu früh = zu wenig Daten für Google.
+                Zu spät = verschenktes Optimierungspotential.
+
+──────────────────────────────────────────────────────────────────────────────
+
+REGEL 7: EMPFEHLUNGEN AUTOMATISCH ANWENDEN
+───────────────────────────────────────────
+
+   Sichere Empfehlungen (automatisch anwenden):
+     - KEYWORD: Neue Keyword-Vorschläge von Google
+     - OPTIMIZE_AD_ROTATION: Anzeigenrotation optimieren
+     - SITELINK_EXTENSION: Sitelink-Erweiterungen
+     - CALLOUT_EXTENSION: Callout-Erweiterungen
+
+   Risikoreiche Empfehlungen (nur benachrichtigen):
+     - CAMPAIGN_BUDGET: Budget-Änderungen
+     - TARGET_CPA_OPT_IN: Bidding-Strategie wechseln
+     - MAXIMIZE_CONVERSIONS_OPT_IN: Bidding-Strategie wechseln
+
+   Limit:       Max. 5 Empfehlungen pro Tag auto-anwenden
+
+   Cooldown:    12 Stunden
+
+
+4. SICHERHEITSGRENZEN (HARD-LIMITS)
+────────────────────────────────────────────────────────────────────────────────
+
+Diese Grenzen können NICHT automatisch überschritten werden:
+
+   BUDGET:
+   - Maximales Tagesbudget pro Kampagne:    50 EUR
+   - Maximales Gesamtbudget pro Tag:        75 EUR
+   - Budget-Änderung pro Anpassung:         max. ±20%
+   - Budget-Änderungen pro Woche:           max. 2
+
+   GEBOTE:
+   - Maximaler CPC pro Keyword:             5,00 EUR
+   - Gebotsänderung pro Anpassung:          max. ±25%
+
+   KEYWORDS:
+   - Max. Keywords pausieren pro Tag:       3
+   - Max. Negative Keywords pro Tag:        10
+   - Keywords werden nur pausiert, NIE gelöscht
+
+   ANZEIGEN:
+   - Nie die letzte aktive Anzeige einer Gruppe pausieren
+   - Anzeigen werden nur pausiert, NIE gelöscht
+
+   GENERAL:
+   - Keine Kampagnen löschen (nur pausieren)
+   - Keine neuen Kampagnen erstellen (nur bestehende optimieren)
+   - Alle Aktionen werden geloggt und sind rückgängig machbar
+
+
+5. ZEITPLAN (SCHEDULER)
+────────────────────────────────────────────────────────────────────────────────
+
+   06:00 Uhr – MORGEN-CHECK:
+   ─────────────────────────
+     1. Performance-Daten der letzten 24h abrufen
+     2. Suchbegriff-Bericht prüfen → Negative Keywords
+     3. Keyword-Performance prüfen → Schlechte pausieren
+     4. Empfehlungen abrufen → Sichere auto-anwenden
+     5. Budget-Auslastung prüfen
+
+   18:00 Uhr – ABEND-CHECK:
+   ─────────────────────────
+     1. Tages-Performance zusammenfassen
+     2. CTR pro Anzeige prüfen → Schlechte markieren
+     3. CPA pro Anzeigengruppe prüfen → Budget-Empfehlung
+     4. Tages-Report per E-Mail senden
+
+   MONTAG 08:00 Uhr – WOCHEN-CHECK:
+   ─────────────────────────────────
+     1. Wochen-Performance-Report erstellen
+     2. Bidding-Strategie-Umstellung prüfen (Phase 1→2→3)
+     3. Budget-Umverteilung prüfen
+     4. Wochen-Report per E-Mail senden
+
+   1. DES MONATS 08:00 Uhr – MONATS-CHECK:
+   ────────────────────────────────────────
+     1. Monats-Report mit allen KPIs
+     2. Kostenübersicht / ROI-Berechnung
+     3. Empfehlung für nächsten Monat
+     4. Monats-Report per E-Mail senden
+
+
+6. E-MAIL-BENACHRICHTIGUNGEN
+────────────────────────────────────────────────────────────────────────────────
+
+SOFORT-ALARM (wird sofort gesendet):
+   ⚠️  Budget aufgebraucht (Kampagne gestoppt)
+   ⚠️  CPA über 60 EUR (doppelt so hoch wie Ziel)
+   ⚠️  Kampagne von Google abgelehnt/gestoppt
+   ⚠️  Conversion-Tracking funktioniert nicht mehr
+   ⚠️  Konto-Guthaben unter 50 EUR
+
+TÄGLICHER REPORT (18:00 Uhr):
+   📊  Impressionen, Klicks, CTR, Kosten, Conversions, CPA
+   📊  Automatische Aktionen des Tages (was wurde geändert)
+   📊  Neue Empfehlungen von Google
+
+WÖCHENTLICHER REPORT (Montag 08:00):
+   📊  Wochenvergleich aller KPIs
+   📊  Beste/schlechteste Keywords der Woche
+   📊  Budget-Auslastung
+   📊  Vorschläge für nächste Woche
+
+MONATLICHER REPORT (1. des Monats):
+   📊  Monatsübersicht aller KPIs
+   📊  Kosten vs. Leads (ROI)
+   📊  Trend-Analyse (besser/schlechter als Vormonat)
+   📊  Strategische Empfehlungen
+
+
+7. DASHBOARD-ERWEITERUNG
+────────────────────────────────────────────────────────────────────────────────
+
+Neue Sektion im Dashboard (werbung.afm-software.com/dashboard):
+
+   "⚙️ Auto-Optimierung"
+   ─────────────────────
+
+   STATUS-ANZEIGE:
+   - Auto-Optimierung: AN / AUS (Toggle)
+   - Letzter Check: 17.03.2026 18:00
+   - Nächster Check: 18.03.2026 06:00
+   - Optimierungsgrad: 78%
+
+   AKTIONS-LOG (letzte 20 Aktionen):
+   ┌──────────────────┬──────────────────────────────────────┬──────────┐
+   │ Datum            │ Aktion                               │ Status   │
+   ├──────────────────┼──────────────────────────────────────┼──────────┤
+   │ 17.03. 18:00     │ Keyword "gratis inkasso" negativ     │ ✅ Auto  │
+   │ 17.03. 18:00     │ Anzeige #3 pausiert (CTR 0.6%)      │ ✅ Auto  │
+   │ 17.03. 06:00     │ Keyword "werklohn" CPC +15%          │ ✅ Auto  │
+   │ 16.03. 18:00     │ Budget +20% empfohlen                │ ⏳ Offen │
+   │ 16.03. 06:00     │ 2 Negative Keywords hinzugefügt      │ ✅ Auto  │
+   └──────────────────┴──────────────────────────────────────┴──────────┘
+
+   REGEL-ÜBERSICHT:
+   - Regel 1: Schlechte Keywords pausieren    [AN] [Bearbeiten]
+   - Regel 2: Gute Keywords verstärken        [AN] [Bearbeiten]
+   - Regel 3: Schlechte Anzeigen pausieren    [AN] [Bearbeiten]
+   - Regel 4: Budget umverteilen              [AN] [Bearbeiten]
+   - Regel 5: Suchbegriffe prüfen             [AN] [Bearbeiten]
+   - Regel 6: Bidding-Strategie umstellen     [AN] [Bearbeiten]
+   - Regel 7: Empfehlungen auto-anwenden      [AN] [Bearbeiten]
+
+
+8. TECHNISCHE UMSETZUNG
+────────────────────────────────────────────────────────────────────────────────
+
+NEUE DATEIEN:
+
+   services/auto_optimizer.py
+   ──────────────────────────
+   - Klasse AutoOptimizer mit allen 7 Regeln
+   - Jede Regel ist eine eigene Methode
+   - Konfigurierbare Schwellwerte
+   - Aktions-Logging in Datenbank/JSON
+
+   services/scheduler.py
+   ─────────────────────
+   - APScheduler für zeitgesteuerte Jobs
+   - Morgen-Check um 06:00
+   - Abend-Check um 18:00
+   - Wochen-Check Montag 08:00
+   - Monats-Check am 1. des Monats
+
+   services/email_reporter.py
+   ──────────────────────────
+   - E-Mail-Versand über SMTP
+   - HTML-Templates für Reports
+   - Sofort-Alarm bei kritischen Events
+
+   api/automation.py
+   ─────────────────
+   - GET  /api/automation/status        → Status der Auto-Optimierung
+   - POST /api/automation/toggle        → AN/AUS schalten
+   - GET  /api/automation/rules         → Alle Regeln anzeigen
+   - PUT  /api/automation/rules/{id}    → Regel-Schwellwerte ändern
+   - GET  /api/automation/log           → Aktions-Log abrufen
+   - POST /api/automation/run           → Manueller Check-Durchlauf
+
+   models/automation.py
+   ────────────────────
+   - OptimizationRule (Pydantic Model)
+   - OptimizationAction (Log-Eintrag)
+   - AutomationStatus
+   - AutomationConfig
+
+   data/automation_log.json
+   ────────────────────────
+   - Speichert alle automatischen Aktionen
+   - Rückgängig-machbar (undo-fähig)
+
+BESTEHENDE DATEIEN (ANPASSUNGEN):
+
+   main.py
+   ───────
+   - Scheduler beim App-Start initialisieren
+   - Automation-Router einbinden
+
+   static/index.html
+   ──────────────────
+   - Neue Dashboard-Sektion "Auto-Optimierung"
+   - Toggle AN/AUS
+   - Aktions-Log Tabelle
+   - Regel-Übersicht
+
+   providers/google_ads.py
+   ───────────────────────
+   - Neue Methoden:
+     * get_search_terms_report()  → Suchbegriff-Bericht
+     * get_keyword_performance()  → Performance pro Keyword
+     * update_keyword_bid()       → Gebot anpassen
+     * pause_keyword()            → Keyword pausieren
+     * add_negative_keyword()     → Negatives Keyword hinzufügen
+     * update_bidding_strategy()  → Bidding-Strategie ändern
+
+
+9. ABLAUF EINES AUTO-OPTIMIERUNGS-DURCHLAUFS
+────────────────────────────────────────────────────────────────────────────────
+
+   Beispiel: Morgen-Check um 06:00 Uhr
+   ────────────────────────────────────
+
+   06:00:00  Start Morgen-Check
+             │
+   06:00:01  ├─ Performance-Daten der letzten 24h abrufen
+             │   → API: GET /api/reports/google/2936775113/performance
+             │
+   06:00:03  ├─ Suchbegriff-Bericht abrufen
+             │   → API: GET /api/reports/google/2936775113/search-terms
+             │   → Gefunden: "inkasso gratis" (3 Klicks, 4,50 EUR, 0 Conv.)
+             │   → AKTION: Als Negative Keyword hinzufügen ✅
+             │
+   06:00:05  ├─ Keyword-Performance prüfen
+             │   → Keyword "b2b inkasso": 62 Klicks, 0 Conversions, 93 EUR
+             │   → AKTION: Keyword pausieren ✅
+             │   → Keyword "firma zahlt nicht": 18 Klicks, 4 Conv., 27 EUR
+             │   → CPA = 6,75 EUR (sehr gut!) → Keine Aktion nötig
+             │
+   06:00:07  ├─ Google Empfehlungen abrufen
+             │   → API: GET /api/recommendations/google/2936775113
+             │   → Empfehlung: "Callout-Erweiterung hinzufügen" (sicher)
+             │   → AKTION: Automatisch anwenden ✅
+             │   → Empfehlung: "Budget um 40% erhöhen" (riskant)
+             │   → AKTION: Nur als E-Mail-Benachrichtigung senden 📧
+             │
+   06:00:10  ├─ Budget-Auslastung prüfen
+             │   → Tagesbudget: 20 EUR, Ausgegeben gestern: 18,50 EUR
+             │   → 92,5% ausgelastet → OK, keine Aktion
+             │
+   06:00:12  └─ Log schreiben + Zusammenfassung
+                 → 3 automatische Aktionen durchgeführt
+                 → 1 Empfehlung zur manuellen Prüfung gesendet
+                 → Dauer: 12 Sekunden
+
+   06:00:12  Ende Morgen-Check ✅
+
+
+10. KOSTEN & RISIKO
+────────────────────────────────────────────────────────────────────────────────
+
+   KOSTEN:
+   - Keine zusätzlichen Kosten für die Automatisierung
+   - Läuft auf dem bestehenden Server (werbung.afm-software.com)
+   - Google Ads API ist kostenlos (zum Standard-Kontingent)
+   - E-Mail-Versand über bestehenden SMTP-Server
+
+   RISIKO-BEWERTUNG:
+   - NIEDRIG: Alle Aktionen haben Hard-Limits
+   - NIEDRIG: Keywords werden nur pausiert, nie gelöscht
+   - NIEDRIG: Budget kann max. 20% pro Anpassung steigen
+   - NIEDRIG: Kritische Änderungen erfordern manuelle Bestätigung
+   - RÜCKGÄNGIG: Alle Aktionen werden geloggt und sind umkehrbar
+
+   WORST CASE:
+   - Maximaler Schaden pro Tag: 75 EUR (Hard-Limit Gesamtbudget)
+   - Auto-Optimierung kann jederzeit per Dashboard deaktiviert werden
+
+
+11. SCHRITTE ZUR UMSETZUNG
+────────────────────────────────────────────────────────────────────────────────
+
+   Schritt 1:  Google Ads Provider erweitern
+               (Suchbegriffe, Keyword-Gebote, Negative Keywords)
+
+   Schritt 2:  Auto-Optimizer Regel-Engine bauen
+               (7 Regeln mit konfigurierbaren Schwellwerten)
+
+   Schritt 3:  Scheduler einrichten
+               (APScheduler: 06:00, 18:00, Montag, Monatserster)
+
+   Schritt 4:  E-Mail-Reporter bauen
+               (Tägliche, wöchentliche, monatliche Reports)
+
+   Schritt 5:  API-Endpoints für Automation
+               (Status, Toggle, Regeln, Log)
+
+   Schritt 6:  Dashboard-Sektion "Auto-Optimierung"
+               (Status, Log, Regel-Verwaltung)
+
+   Schritt 7:  Testen mit pausierter Kampagne
+               (Dry-Run Modus: alles loggen, nichts ausführen)
+
+   Schritt 8:  Go-Live
+               (Auto-Optimierung aktivieren)
+
+
+================================================================================

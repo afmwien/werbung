@@ -1,0 +1,342 @@
+================================================================================
+GOOGLE ADS WERBEKONZEPT – rechnungseintreibung.at
+================================================================================
+Stand: 17. März 2026
+================================================================================
+
+
+1. PROJEKT-ÜBERBLICK
+────────────────────────────────────────────────────────────────────────────────
+
+Domain:          rechnungseintreibung.at
+Branche:         B2B Inkasso / Forderungsmanagement
+Zielmarkt:       Österreich
+Zielgruppe:      Unternehmer, Geschäftsführer, KMU, EPU mit offenen B2B-Rechnungen
+                 (Firmen die von anderen Firmen Geld bekommen sollen)
+Zielseite:       https://rechnungseintreibung.at
+Startbudget:     20–25 EUR pro Tag (ca. 600–750 EUR pro Monat)
+
+Kernbotschaft:   "Geschäftskunde zahlt nicht? Rechnung per E-Mail einreichen.
+                  Ein Rechtsanwalt treibt Ihre B2B-Forderung ein."
+
+B2B-FOKUS:       Ausschließlich Forderungen zwischen Unternehmen.
+                 Keine Privatkunden / Konsumenten-Inkasso.
+
+
+2. KAMPAGNENSTRUKTUR
+────────────────────────────────────────────────────────────────────────────────
+
+KAMPAGNE 1: "Rechnungseintreibung – Search"
+   Typ:              Search
+   Budget:           20 EUR/Tag
+   Bidding:          Klicks maximieren (max. CPC 2,50 EUR)
+   Geo-Targeting:    Österreich
+   Sprache:          Deutsch
+   Netzwerk:         Google Suche + Suchnetzwerk-Partner
+
+   ANZEIGENGRUPPE A: "B2B Forderung eintreiben"
+   ─────────────────
+   Keywords (Phrase Match):
+     - "b2b forderung eintreiben"
+     - "geschäftskunde zahlt nicht"
+     - "firmenrechnung eintreiben"
+     - "forderung eintreiben lassen"
+     - "offene rechnung eintreiben"
+     - "rechnungseintreibung"
+     - "b2b inkasso österreich"
+     - "forderungsmanagement unternehmen"
+
+   ANZEIGENGRUPPE B: "Firma/Kunde zahlt nicht"
+   ─────────────────
+   Keywords (Phrase Match):
+     - "firma zahlt rechnung nicht"
+     - "geschäftspartner zahlt nicht"
+     - "kunde zahlt nicht b2b"
+     - "auftraggeber zahlt nicht"
+     - "unternehmen zahlt rechnung nicht"
+     - "zahlungsverzug geschäftskunde"
+     - "lieferantenrechnung nicht bezahlt"
+     - "handwerkerrechnung nicht bezahlt"
+
+   ANZEIGENGRUPPE C: "Mahnverfahren/Anwalt B2B"
+   ─────────────────
+   Keywords (Phrase Match):
+     - "rechtsanwalt b2b inkasso"
+     - "mahnklage gegen firma"
+     - "gerichtliches mahnverfahren firma"
+     - "anwalt forderung unternehmen"
+     - "mahnverfahren gegen geschäftskunde"
+     - "b2b mahnverfahren österreich"
+
+   ANZEIGENGRUPPE D: "Branchen-spezifisch"
+   ─────────────────
+   Keywords (Phrase Match):
+     - "handwerker rechnung eintreiben"
+     - "subunternehmer rechnung offen"
+     - "werklohn eintreiben"
+     - "honorar eintreiben"
+     - "dienstleistung nicht bezahlt"
+     - "lieferant rechnung offen"
+
+
+KAMPAGNE 2: "Rechnungseintreibung – Brand"
+   Typ:              Search
+   Budget:           3 EUR/Tag
+   Bidding:          Klicks maximieren
+   Geo-Targeting:    Österreich
+
+   Keywords (Exact Match):
+     - [rechnungseintreibung]
+     - [rechnungseintreibung.at]
+     - [rechnungseintreibung at]
+
+
+KAMPAGNE 3: "Rechnungseintreibung – Performance Max" (PHASE 2, OPTIONAL)
+   Typ:              Performance Max
+   Budget:           10–15 EUR/Tag
+   Zielgruppe:       KMU, EPU, Selbstständige in Österreich
+   Kanäle:           Display, YouTube, Discovery, Gmail
+   --> Benötigt Bilder und ggf. Video (siehe Abschnitt 7)
+
+
+3. ANZEIGENTEXTE (RSA – Responsive Search Ads)
+────────────────────────────────────────────────────────────────────────────────
+
+Headlines (max. 30 Zeichen, 15 Stück):
+
+   H1:  Firma zahlt nicht?
+   H2:  B2B-Forderung eintreiben
+   H3:  Rechnung per Mail senden
+   H4:  Rechtsanwalt übernimmt
+   H5:  B2B-Inkasso Österreich
+   H6:  Keine Vorabkosten
+   H7:  rechnungseintreibung.at
+   H8:  Schnell & unkompliziert
+   H9:  Offene B2B-Rechnungen?
+   H10: Mahnverfahren starten
+   H11: Für Unternehmer in AT
+   H12: Jetzt Rechnung einreichen
+   H13: Rechtsanwalt einschalten
+   H14: Ihr Geld zurückholen
+   H15: Geschäftskunde zahlt nicht?
+
+Descriptions (max. 90 Zeichen, 4 Stück):
+
+   D1:  Geschäftskunde zahlt nicht? Rechnung per E-Mail einreichen.
+        Ein Rechtsanwalt treibt Ihre B2B-Forderung ein.
+
+   D2:  Keine Vorabkosten. Professionelle B2B-Forderungseintreibung
+        durch Rechtsanwälte in Österreich.
+
+   D3:  Unternehmer vertrauen auf rechnungseintreibung.at –
+        B2B-Inkasso schnell, sicher und rechtskonform.
+
+   D4:  Firma zahlt Ihre Rechnung nicht? Rechnung senden,
+        Anwalt übernimmt. Spezialisiert auf B2B-Forderungen.
+
+
+4. ANZEIGENERWEITERUNGEN
+────────────────────────────────────────────────────────────────────────────────
+
+SITELINK-ERWEITERUNGEN (zusätzliche Links unter der Anzeige):
+
+   Sitelink 1:  "So funktioniert's"
+                Beschreibung: Rechnung senden, Anwalt prüft, Forderung wird eingetrieben
+                URL: https://rechnungseintreibung.at/so-funktionierts
+
+   Sitelink 2:  "Häufige Fragen"
+                Beschreibung: Antworten auf die wichtigsten Fragen
+                URL: https://rechnungseintreibung.at/faq
+
+   Sitelink 3:  "Jetzt einreichen"
+                Beschreibung: Rechnung per E-Mail oder Formular einreichen
+                URL: https://rechnungseintreibung.at/einreichen
+
+   Sitelink 4:  "Kontakt"
+                Beschreibung: Kostenlose Erstberatung. Rufen Sie uns an.
+                URL: https://rechnungseintreibung.at/kontakt
+
+CALLOUT-ERWEITERUNGEN (kurze Vorteile):
+
+   - Keine Vorabkosten
+   - Rechtsanwälte in Österreich
+   - Schnelle Bearbeitung
+   - Per E-Mail einreichen
+   - Gerichtlich & außergerichtlich
+
+SNIPPET-ERWEITERUNGEN:
+
+   Typ: Dienstleistungen
+   - Außergerichtliche Mahnung
+   - Gerichtliches Mahnverfahren
+   - Forderungsmanagement
+   - Inkasso
+
+ANRUF-ERWEITERUNG:
+
+   Telefonnummer: [HIER TELEFONNUMMER EINTRAGEN]
+   Anruf als Conversion tracken: Ja
+
+
+5. NEGATIVE KEYWORDS (AUSSCHLIESSEN)
+────────────────────────────────────────────────────────────────────────────────
+
+Folgende Keywords ausschließen, um Budget nicht zu verschwenden:
+
+   - kostenlos
+   - gratis
+   - muster
+   - vorlage
+   - vorlage mahnung
+   - selbst mahnen
+   - inkasso jobs
+   - inkasso stellenangebot
+   - inkasso beschwerde
+   - schuldenberatung
+   - privatinsolvenz
+   - schuldnerberatung
+   - mahnung schreiben vorlage
+   - zahlungserinnerung vorlage
+   - inkasso abwehren
+   - gegen inkasso wehren
+   - privat (Ausschluss Privatpersonen)
+   - konsument
+   - verbraucher
+   - miete nicht bezahlt (B2C-Thema)
+   - unterhalt eintreiben (Privatrecht)
+   - alimente (Familienrecht)
+   - nachbar schuldet
+
+
+6. CONVERSION-TRACKING
+────────────────────────────────────────────────────────────────────────────────
+
+Was als Conversion gezählt wird:
+
+   1. E-Mail an einreichen@rechnungseintreibung.at
+      → Tracking über "Danke"-Seite nach Formular-Absendung
+
+   2. Kontaktformular abgeschickt
+      → Tracking über Formular-Submit Event
+
+   3. Telefon-Anruf über Anzeige
+      → Google Ads Anruf-Tracking aktivieren
+
+Einrichtung:
+   - Google Tag (gtag.js) auf rechnungseintreibung.at einbauen
+   - Conversion-Aktionen in Google Ads anlegen
+   - Zielseiten-Tracking mit Google Analytics 4 verbinden
+
+
+6b. B2B-ZIELGRUPPEN-TARGETING (Google Ads Einstellungen)
+────────────────────────────────────────────────────────────────────────────────
+
+Zielgruppen-Signale (Beobachtung/Observation):
+
+   IN-MARKET Zielgruppen:
+   - Unternehmensdienstleistungen
+   - Buchhaltungssoftware
+   - Rechtsberatung
+   - Bürobedarf & -ausstattung
+
+   DEMOGRAFISCH:
+   - Unternehmensgrößen: Klein (1-49), Mittel (50-249)
+   - Branchen: Handwerk, Dienstleistung, Handel, Bau
+
+   BENUTZERDEFINIERTE ZIELGRUPPE:
+   - Nutzer die nach folgenden Begriffen suchen:
+     * "buchhaltung" "firmenbuchhaltung" "rechnungswesen"
+     * "WKO" "Wirtschaftskammer"
+     * "Unternehmensberater" "Steuerberater"
+   - Nutzer die folgende Websites besuchen:
+     * wko.at
+     * usp.gv.at
+     * ris.bka.gv.at
+
+   Anzeigenplanung:
+   - Montag bis Freitag: 07:00 – 19:00 (Geschäftszeiten)
+   - Wochenende: deaktiviert oder reduziertes Budget
+   - Erhöhtes Gebot: +20% Mo–Fr 09:00–12:00 (Hauptgeschäftszeit)
+
+
+7. BILDER & ASSETS (NUR FÜR PHASE 2 – PERFORMANCE MAX)
+────────────────────────────────────────────────────────────────────────────────
+
+Für die Search-Kampagnen (Kampagne 1 + 2) werden KEINE Bilder benötigt.
+Nur Textanzeigen.
+
+Für die Performance Max Kampagne (Phase 2, optional) werden benötigt:
+
+   PFLICHT:
+   ☐ Logo quadratisch         1200 x 1200 px  (PNG/JPG)
+   ☐ Logo landscape           1200 x 300 px   (PNG/JPG)
+   ☐ Marketing-Bild landscape 1200 x 628 px   (PNG/JPG)
+   ☐ Marketing-Bild quadrat   1200 x 1200 px  (PNG/JPG)
+
+   EMPFOHLEN:
+   ☐ Weiteres Bild portrait   960 x 1200 px   (PNG/JPG)
+   ☐ Kurzes Video             15–30 Sekunden   (YouTube-Link)
+
+   Bildideen:
+   - Unternehmer am Schreibtisch mit Rechnungsstapel (Frustration)
+   - Handschlag zwischen Anwalt und Unternehmer (Lösung)
+   - Geld/Euro-Scheine die zurückkommen (Erfolg)
+   - Stempel "BEZAHLT" auf Rechnung (Ergebnis)
+
+
+8. BIDDING-STRATEGIE & OPTIMIERUNG
+────────────────────────────────────────────────────────────────────────────────
+
+PHASE 1 (Woche 1–4):
+   Strategie:     Klicks maximieren
+   Max. CPC:      2,50 EUR
+   Ziel:          Daten sammeln, Keywords testen
+
+PHASE 2 (Woche 5–8):
+   Strategie:     Conversions maximieren
+   Voraussetzung: Mindestens 15 Conversions in 30 Tagen
+   Ziel:          Automatische Optimierung auf Leads
+
+PHASE 3 (ab Woche 9):
+   Strategie:     Ziel-CPA (Target CPA)
+   Ziel-CPA:      30–40 EUR pro Lead
+   Ziel:          Skalierung bei stabilem CPA
+
+
+9. ERWARTETE KENNZAHLEN
+────────────────────────────────────────────────────────────────────────────────
+
+   Metrik                     Geschätzt (Nische AT)
+   ─────────────────────────  ────────────────────
+   CPC (Kosten pro Klick)     1,50 – 3,00 EUR
+   CTR (Klickrate)            5 – 10 %
+   Conversion Rate            3 – 8 %
+   Kosten pro Lead            20 – 50 EUR
+   Leads pro Monat (20€/Tag)  12 – 30 Leads
+
+
+10. ZEITPLAN
+────────────────────────────────────────────────────────────────────────────────
+
+   ☐ Woche 1:   Kampagnen anlegen (pausiert), Conversion-Tracking einrichten
+   ☐ Woche 2:   Kampagnen aktivieren, erste Daten sammeln
+   ☐ Woche 3–4: Keywords optimieren, schlechte pausieren, neue testen
+   ☐ Woche 5–8: Bidding auf Conversions umstellen
+   ☐ Woche 9+:  Skalierung, ggf. Performance Max starten
+
+
+================================================================================
+NOTIZEN
+================================================================================
+
+- Alle Kampagnen starten als PAUSED (pausiert) zur Prüfung
+- Telefonnummer muss noch eingetragen werden
+- Zielseiten müssen conversion-optimiert sein (klarer CTA, Formular oben)
+- Landingpage sollte "Vertrauen" vermitteln: Anwaltsnamen, Referenzen, Siegel
+- Landingpage klar als B2B positionieren: "Für Unternehmer und Firmen"
+- A/B-Test der Headlines nach 2 Wochen auswerten
+- Budget kann nach 4 Wochen angepasst werden basierend auf Performance
+- B2B-Fokus regelmäßig prüfen: Suchbegriff-Bericht auf Privat-Anfragen checken
+  und als Negative Keywords hinzufügen
+
+================================================================================

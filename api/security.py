@@ -32,6 +32,22 @@ def get_client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
+async def verify_ip(request: Request) -> str:
+    """
+    Prüft nur die IP-Whitelist (ohne API-Key).
+    Für Dashboard, Docs und andere geschützte Seiten.
+    """
+    allowed_ips = get_allowed_ips()
+    if allowed_ips:
+        client_ip = get_client_ip(request)
+        if client_ip not in allowed_ips:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"IP {client_ip} nicht erlaubt"
+            )
+    return get_client_ip(request)
+
+
 async def verify_api_key(
     request: Request,
     header_key: str = Security(api_key_header),
