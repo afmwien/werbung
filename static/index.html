@@ -80,7 +80,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="font-medium truncate" x-text="client.name"></div>
-                            <div class="text-xs text-slate-400" x-text="getClientPlatformCount(client) + ' Plattformen'"></div>
+                            <div class="text-xs text-slate-400" x-text="getClientBudgetDisplay(client.id)"></div>
                         </div>
                     </button>
                 </template>
@@ -94,7 +94,7 @@
                         </div>
                         <div class="flex-1">
                             <div class="font-medium">Gesamtübersicht</div>
-                            <div class="text-xs text-slate-400">Alle Unternehmen</div>
+                            <div class="text-xs text-slate-400" x-text="getTotalBudgetDisplay()"></div>
                         </div>
                     </button>
                 </div>
@@ -506,6 +506,35 @@
                     return Object.values(client.platforms).filter(p => p !== null).length;
                 },
 
+                getClientBudgetDisplay(clientId) {
+                    const data = this.clientsData[clientId];
+                    if (!data?.stats) return '—';
+                    const spent = data.stats.spent || 0;
+                    const budget = data.stats.budget || 0;
+                    if (budget === 0 && spent === 0) return '—';
+                    if (spent > 0) {
+                        return this.formatCurrencyShort(spent) + ' / ' + this.formatCurrencyShort(budget);
+                    }
+                    return this.formatCurrencyShort(budget) + ' Budget';
+                },
+
+                getTotalBudgetDisplay() {
+                    let totalBudget = 0;
+                    let totalSpent = 0;
+                    for (const clientId in this.clientsData) {
+                        const data = this.clientsData[clientId];
+                        if (data?.stats) {
+                            totalBudget += data.stats.budget || 0;
+                            totalSpent += data.stats.spent || 0;
+                        }
+                    }
+                    if (totalBudget === 0 && totalSpent === 0) return 'Alle Unternehmen';
+                    if (totalSpent > 0) {
+                        return this.formatCurrencyShort(totalSpent) + ' / ' + this.formatCurrencyShort(totalBudget);
+                    }
+                    return this.formatCurrencyShort(totalBudget) + ' Gesamt';
+                },
+
                 getAvailablePlatforms() {
                     const client = this.clients.find(c => c.id === this.selectedClient);
                     if (!client?.platforms) return [];
@@ -671,6 +700,14 @@
                 // Helpers
                 formatCurrency(value) {
                     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value || 0);
+                },
+
+                formatCurrencyShort(value) {
+                    if (!value || value === 0) return '€0';
+                    if (value >= 1000) {
+                        return '€' + (value / 1000).toFixed(1).replace('.0', '') + 'k';
+                    }
+                    return '€' + Math.round(value);
                 },
 
                 formatBudget(campaign) {
