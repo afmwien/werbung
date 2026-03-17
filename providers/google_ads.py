@@ -72,9 +72,7 @@ class GoogleAdsProvider(AdsProvider):
                 campaign.name,
                 campaign.status,
                 campaign.advertising_channel_type,
-                campaign_budget.amount_micros,
-                campaign.start_date,
-                campaign.end_date
+                campaign_budget.amount_micros
             FROM campaign
             WHERE campaign.status != 'REMOVED'
             ORDER BY campaign.name
@@ -107,9 +105,7 @@ class GoogleAdsProvider(AdsProvider):
                 campaign.name,
                 campaign.status,
                 campaign.advertising_channel_type,
-                campaign_budget.amount_micros,
-                campaign.start_date,
-                campaign.end_date
+                campaign_budget.amount_micros
             FROM campaign
             WHERE campaign.id = {campaign_id}
         """
@@ -510,8 +506,8 @@ class GoogleAdsProvider(AdsProvider):
             status=self._map_status_from_google(campaign.status.name),
             campaign_type=self._map_campaign_type_from_google(campaign.advertising_channel_type.name),
             budget_amount_micros=budget.amount_micros if budget else None,
-            start_date=campaign.start_date if campaign.start_date else None,
-            end_date=campaign.end_date if campaign.end_date else None,
+            start_date=None,
+            end_date=None,
             provider=self.provider_name
         )
 
