@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ads Manager Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -369,6 +370,83 @@
                 flex-direction: column;
             }
         }
+
+        /* Performance Charts */
+        .charts-section {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .date-range {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .date-range input[type="date"] {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        .chart-card {
+            background: var(--light);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .chart-card h3 {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--gray);
+            margin-bottom: 1rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+        }
+
+        .performance-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .perf-stat {
+            text-align: center;
+        }
+
+        .perf-stat .perf-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .perf-stat .perf-label {
+            font-size: 0.75rem;
+            color: var(--gray);
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -415,6 +493,64 @@
             <button class="btn btn-primary" onclick="loadCampaigns()">🔄 Laden</button>
         </div>
 
+        <!-- Performance Charts -->
+        <div class="charts-section" id="chartsSection" style="display: none;">
+            <div class="section-header">
+                <h2>📈 Performance</h2>
+                <div class="date-range">
+                    <label>Von:</label>
+                    <input type="date" id="startDate" />
+                    <label>Bis:</label>
+                    <input type="date" id="endDate" />
+                    <button class="btn btn-outline" onclick="loadPerformance()">Aktualisieren</button>
+                </div>
+            </div>
+
+            <!-- Performance Stats -->
+            <div class="performance-stats" id="performanceStats">
+                <div class="perf-stat">
+                    <div class="perf-value" id="perfImpressions">-</div>
+                    <div class="perf-label">Impressionen</div>
+                </div>
+                <div class="perf-stat">
+                    <div class="perf-value" id="perfClicks">-</div>
+                    <div class="perf-label">Klicks</div>
+                </div>
+                <div class="perf-stat">
+                    <div class="perf-value" id="perfCtr">-</div>
+                    <div class="perf-label">CTR</div>
+                </div>
+                <div class="perf-stat">
+                    <div class="perf-value" id="perfCost">-</div>
+                    <div class="perf-label">Kosten</div>
+                </div>
+                <div class="perf-stat">
+                    <div class="perf-value" id="perfConversions">-</div>
+                    <div class="perf-label">Conversions</div>
+                </div>
+                <div class="perf-stat">
+                    <div class="perf-value" id="perfCpa">-</div>
+                    <div class="perf-label">CPA</div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Impressionen & Klicks</h3>
+                    <div class="chart-container">
+                        <canvas id="clicksChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Kosten & Conversions</h3>
+                    <div class="chart-container">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Campaigns -->
         <div class="campaigns-section">
             <div class="section-header">
@@ -435,14 +571,28 @@
         // Config
         const API_BASE = window.location.origin;
         let apiKey = localStorage.getItem('adsManagerApiKey') || '';
+        let clicksChart = null;
+        let costChart = null;
 
         // Init
         document.addEventListener('DOMContentLoaded', () => {
+            // Set default dates (last 30 days)
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            document.getElementById('endDate').value = formatDate(today);
+            document.getElementById('startDate').value = formatDate(thirtyDaysAgo);
+
             if (apiKey) {
                 document.getElementById('apiKey').value = '••••••••••••••••';
                 loadCampaigns();
             }
         });
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
 
         // Save API Key
         function saveApiKey() {
@@ -496,12 +646,230 @@
                 const campaigns = await apiCall(`/api/campaigns/${provider}/${customerId}`);
                 renderCampaigns(campaigns, provider, customerId);
                 updateStats(campaigns);
+                loadPerformance();  // Lade auch Performance-Daten
                 document.getElementById('lastUpdate').textContent =
                     `Aktualisiert: ${new Date().toLocaleTimeString('de-DE')}`;
             } catch (error) {
                 content.innerHTML = `<div class="error">${error.message}</div>`;
                 showToast(error.message, 'error');
             }
+        }
+
+        // Load Performance Data
+        async function loadPerformance() {
+            const provider = document.getElementById('provider').value;
+            const customerId = document.getElementById('customerId').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (!apiKey || !customerId) return;
+
+            try {
+                const report = await apiCall(
+                    `/api/reports/${provider}/${customerId}/performance?start_date=${startDate}&end_date=${endDate}`
+                );
+
+                renderPerformanceStats(report);
+                renderCharts(report);
+                document.getElementById('chartsSection').style.display = 'block';
+            } catch (error) {
+                console.error('Performance load error:', error);
+                // Zeige leere Charts wenn keine Daten
+                renderEmptyCharts();
+            }
+        }
+
+        // Render Performance Stats
+        function renderPerformanceStats(report) {
+            const totals = report.totals || {};
+
+            document.getElementById('perfImpressions').textContent =
+                formatNumber(totals.impressions || 0);
+            document.getElementById('perfClicks').textContent =
+                formatNumber(totals.clicks || 0);
+            document.getElementById('perfCtr').textContent =
+                formatPercent(totals.ctr || 0);
+            document.getElementById('perfCost').textContent =
+                formatCurrency(totals.cost || 0);
+            document.getElementById('perfConversions').textContent =
+                formatNumber(totals.conversions || 0);
+            document.getElementById('perfCpa').textContent =
+                totals.conversions > 0 ? formatCurrency(totals.cost / totals.conversions) : '-';
+        }
+
+        // Render Charts
+        function renderCharts(report) {
+            const campaigns = report.campaigns || [];
+
+            // Prepare data
+            const labels = campaigns.map(c => truncate(c.campaign_name, 20));
+            const impressions = campaigns.map(c => c.impressions || 0);
+            const clicks = campaigns.map(c => c.clicks || 0);
+            const costs = campaigns.map(c => c.cost || 0);
+            const conversions = campaigns.map(c => c.conversions || 0);
+
+            // Destroy existing charts
+            if (clicksChart) clicksChart.destroy();
+            if (costChart) costChart.destroy();
+
+            // Clicks Chart
+            const clicksCtx = document.getElementById('clicksChart').getContext('2d');
+            clicksChart = new Chart(clicksCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Impressionen',
+                            data: impressions,
+                            backgroundColor: 'rgba(66, 133, 244, 0.7)',
+                            borderColor: '#4285f4',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Klicks',
+                            data: clicks,
+                            backgroundColor: 'rgba(52, 168, 83, 0.7)',
+                            borderColor: '#34a853',
+                            borderWidth: 1,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Impressionen' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: { display: true, text: 'Klicks' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+
+            // Cost Chart
+            const costCtx = document.getElementById('costChart').getContext('2d');
+            costChart = new Chart(costCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Kosten (€)',
+                            data: costs,
+                            backgroundColor: 'rgba(251, 188, 4, 0.7)',
+                            borderColor: '#fbbc04',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Conversions',
+                            data: conversions,
+                            backgroundColor: 'rgba(234, 67, 53, 0.7)',
+                            borderColor: '#ea4335',
+                            borderWidth: 1,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Kosten (€)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: { display: true, text: 'Conversions' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+        }
+
+        // Render empty charts placeholder
+        function renderEmptyCharts() {
+            document.getElementById('chartsSection').style.display = 'block';
+            document.getElementById('perfImpressions').textContent = '0';
+            document.getElementById('perfClicks').textContent = '0';
+            document.getElementById('perfCtr').textContent = '0%';
+            document.getElementById('perfCost').textContent = '€0,00';
+            document.getElementById('perfConversions').textContent = '0';
+            document.getElementById('perfCpa').textContent = '-';
+
+            // Empty charts
+            if (clicksChart) clicksChart.destroy();
+            if (costChart) costChart.destroy();
+
+            const emptyData = {
+                labels: ['Keine Daten'],
+                datasets: [{
+                    label: 'Keine Daten im Zeitraum',
+                    data: [0],
+                    backgroundColor: 'rgba(200, 200, 200, 0.5)'
+                }]
+            };
+
+            clicksChart = new Chart(document.getElementById('clicksChart'), {
+                type: 'bar',
+                data: emptyData,
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            costChart = new Chart(document.getElementById('costChart'), {
+                type: 'bar',
+                data: emptyData,
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // Format helpers
+        function formatNumber(num) {
+            return num.toLocaleString('de-DE');
+        }
+
+        function formatPercent(num) {
+            return (num * 100).toFixed(2) + '%';
+        }
+
+        function formatCurrency(num) {
+            return num.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+        }
+
+        function truncate(str, len) {
+            return str.length > len ? str.substring(0, len) + '...' : str;
         }
 
         // Render Campaigns Table
