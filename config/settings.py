@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     GOOGLE_ADS_CLIENT_ID: Optional[str] = None
     GOOGLE_ADS_CLIENT_SECRET: Optional[str] = None
     GOOGLE_ADS_REFRESH_TOKEN: Optional[str] = None
+    GOOGLE_ADS_LOGIN_CUSTOMER_ID: Optional[str] = None
     GOOGLE_ADS_CUSTOMER_ID: Optional[str] = None
 
     # Meta Ads (für spätere Erweiterung)
@@ -29,6 +30,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"
 
 
 settings = Settings()
