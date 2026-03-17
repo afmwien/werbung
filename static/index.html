@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ads Manager Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4285f4;
+            --success: #34a853;
+            --warning: #fbbc04;
+            --danger: #ea4335;
+            --dark: #202124;
+            --gray: #5f6368;
+            --light: #f8f9fa;
+            --border: #dadce0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--light);
+            color: var(--dark);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header h1::before {
+            content: "📊";
+        }
+
+        .api-key-form {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .api-key-form input {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            width: 300px;
+            font-size: 0.875rem;
+        }
+
+        .api-key-form input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Main Layout */
+        .main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .stat-card .label {
+            font-size: 0.875rem;
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 500;
+        }
+
+        .stat-card .value.success { color: var(--success); }
+        .stat-card .value.warning { color: var(--warning); }
+        .stat-card .value.danger { color: var(--danger); }
+
+        /* Account Selector */
+        .account-selector {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .account-selector label {
+            font-weight: 500;
+        }
+
+        .account-selector select,
+        .account-selector input {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3367d6;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--dark);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--gray);
+        }
+
+        .btn-outline:hover {
+            background: var(--light);
+        }
+
+        /* Campaigns Table */
+        .campaigns-section {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header h2 {
+            font-size: 1.125rem;
+            font-weight: 500;
+        }
+
+        .campaigns-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .campaigns-table th,
+        .campaigns-table td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .campaigns-table th {
+            background: var(--light);
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+
+        .campaigns-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .campaigns-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-enabled {
+            background: #e6f4ea;
+            color: var(--success);
+        }
+
+        .status-paused {
+            background: #fef7e0;
+            color: #b06000;
+        }
+
+        .status-removed {
+            background: #fce8e6;
+            color: var(--danger);
+        }
+
+        /* Campaign Type */
+        .campaign-type {
+            font-size: 0.75rem;
+            color: var(--gray);
+            background: var(--light);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        /* Budget */
+        .budget {
+            font-weight: 500;
+        }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .actions .btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        /* Loading & Empty States */
+        .loading, .empty, .error {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray);
+        }
+
+        .loading::before {
+            content: "⏳";
+            display: block;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty::before {
+            content: "📭";
+            display: block;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .error {
+            color: var(--danger);
+        }
+
+        .error::before {
+            content: "⚠️";
+            display: block;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: var(--dark);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            animation: slideIn 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .api-key-form input {
+                width: 100%;
+            }
+
+            .campaigns-table {
+                font-size: 0.875rem;
+            }
+
+            .campaigns-table th,
+            .campaigns-table td {
+                padding: 0.75rem;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Ads Manager</h1>
+        <div class="api-key-form">
+            <input type="password" id="apiKey" placeholder="API-Key eingeben..." />
+            <button class="btn btn-primary" onclick="saveApiKey()">Speichern</button>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">Kampagnen</div>
+                <div class="value" id="totalCampaigns">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Aktiv</div>
+                <div class="value success" id="activeCampaigns">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Pausiert</div>
+                <div class="value warning" id="pausedCampaigns">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Tagesbudget gesamt</div>
+                <div class="value" id="totalBudget">-</div>
+            </div>
+        </div>
+
+        <!-- Account Selector -->
+        <div class="account-selector">
+            <label for="provider">Plattform:</label>
+            <select id="provider">
+                <option value="google">Google Ads</option>
+                <option value="meta" disabled>Meta Ads (bald)</option>
+            </select>
+
+            <label for="customerId">Kunden-ID:</label>
+            <input type="text" id="customerId" value="2936775113" placeholder="z.B. 2936775113" />
+
+            <button class="btn btn-primary" onclick="loadCampaigns()">🔄 Laden</button>
+        </div>
+
+        <!-- Campaigns -->
+        <div class="campaigns-section">
+            <div class="section-header">
+                <h2>Kampagnen</h2>
+                <span id="lastUpdate"></span>
+            </div>
+            <div id="campaignsContent">
+                <div class="empty">
+                    Gib deinen API-Key ein und klicke "Laden"
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Config
+        const API_BASE = window.location.origin;
+        let apiKey = localStorage.getItem('adsManagerApiKey') || '';
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            if (apiKey) {
+                document.getElementById('apiKey').value = '••••••••••••••••';
+                loadCampaigns();
+            }
+        });
+
+        // Save API Key
+        function saveApiKey() {
+            const input = document.getElementById('apiKey');
+            if (input.value && !input.value.includes('•')) {
+                apiKey = input.value;
+                localStorage.setItem('adsManagerApiKey', apiKey);
+                input.value = '••••••••••••••••';
+                showToast('API-Key gespeichert', 'success');
+                loadCampaigns();
+            }
+        }
+
+        // API Call
+        async function apiCall(endpoint, method = 'GET') {
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                method,
+                headers: {
+                    'X-API-Key': apiKey,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'API-Fehler');
+            }
+
+            return response.json();
+        }
+
+        // Load Campaigns
+        async function loadCampaigns() {
+            const provider = document.getElementById('provider').value;
+            const customerId = document.getElementById('customerId').value;
+            const content = document.getElementById('campaignsContent');
+
+            if (!apiKey) {
+                showToast('Bitte API-Key eingeben', 'error');
+                return;
+            }
+
+            if (!customerId) {
+                showToast('Bitte Kunden-ID eingeben', 'error');
+                return;
+            }
+
+            content.innerHTML = '<div class="loading">Lade Kampagnen...</div>';
+
+            try {
+                const campaigns = await apiCall(`/api/campaigns/${provider}/${customerId}`);
+                renderCampaigns(campaigns, provider, customerId);
+                updateStats(campaigns);
+                document.getElementById('lastUpdate').textContent =
+                    `Aktualisiert: ${new Date().toLocaleTimeString('de-DE')}`;
+            } catch (error) {
+                content.innerHTML = `<div class="error">${error.message}</div>`;
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Render Campaigns Table
+        function renderCampaigns(campaigns, provider, customerId) {
+            const content = document.getElementById('campaignsContent');
+
+            if (campaigns.length === 0) {
+                content.innerHTML = '<div class="empty">Keine Kampagnen gefunden</div>';
+                return;
+            }
+
+            const html = `
+                <table class="campaigns-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Typ</th>
+                            <th>Tagesbudget</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${campaigns.map(c => `
+                            <tr>
+                                <td>
+                                    <strong>${escapeHtml(c.name)}</strong>
+                                    <br><small style="color: var(--gray)">ID: ${c.id}</small>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-${c.status}">
+                                        ${getStatusIcon(c.status)} ${c.status}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="campaign-type">${formatCampaignType(c.campaign_type)}</span>
+                                </td>
+                                <td class="budget">
+                                    ${formatBudget(c.budget_amount_micros)}
+                                </td>
+                                <td class="actions">
+                                    ${c.status === 'paused' ?
+                                        `<button class="btn btn-success" onclick="enableCampaign('${provider}', '${customerId}', '${c.id}')">▶ Aktivieren</button>` :
+                                        `<button class="btn btn-warning" onclick="pauseCampaign('${provider}', '${customerId}', '${c.id}')">⏸ Pausieren</button>`
+                                    }
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            content.innerHTML = html;
+        }
+
+        // Update Stats
+        function updateStats(campaigns) {
+            const total = campaigns.length;
+            const active = campaigns.filter(c => c.status === 'enabled').length;
+            const paused = campaigns.filter(c => c.status === 'paused').length;
+            const totalBudget = campaigns.reduce((sum, c) => sum + (c.budget_amount_micros || 0), 0);
+
+            document.getElementById('totalCampaigns').textContent = total;
+            document.getElementById('activeCampaigns').textContent = active;
+            document.getElementById('pausedCampaigns').textContent = paused;
+            document.getElementById('totalBudget').textContent = formatBudget(totalBudget);
+        }
+
+        // Campaign Actions
+        async function pauseCampaign(provider, customerId, campaignId) {
+            try {
+                await apiCall(`/api/campaigns/${provider}/${customerId}/${campaignId}/pause`, 'POST');
+                showToast('Kampagne pausiert', 'success');
+                loadCampaigns();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function enableCampaign(provider, customerId, campaignId) {
+            try {
+                await apiCall(`/api/campaigns/${provider}/${customerId}/${campaignId}/enable`, 'POST');
+                showToast('Kampagne aktiviert', 'success');
+                loadCampaigns();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Helpers
+        function formatBudget(micros) {
+            if (!micros) return '-';
+            return (micros / 1000000).toLocaleString('de-DE', {
+                style: 'currency',
+                currency: 'EUR'
+            });
+        }
+
+        function formatCampaignType(type) {
+            const types = {
+                'search': 'Search',
+                'display': 'Display',
+                'video': 'Video',
+                'shopping': 'Shopping',
+                'performance_max': 'Performance Max',
+                'discovery': 'Discovery',
+                'app': 'App',
+                'smart': 'Smart',
+                'unknown': 'Unbekannt'
+            };
+            return types[type] || type;
+        }
+
+        function getStatusIcon(status) {
+            const icons = {
+                'enabled': '✓',
+                'paused': '⏸',
+                'removed': '✕'
+            };
+            return icons[status] || '';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Toast Notifications
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

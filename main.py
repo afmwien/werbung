@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, RedirectResponse
 from config.settings import settings
 from api.campaigns import router as campaigns_router
 from api.ad_groups import router as ad_groups_router
 from api.ads import router as ads_router
 from api.reports import router as reports_router
+import os
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -48,6 +51,18 @@ app.include_router(reports_router, prefix="/api")
 
 @app.get("/")
 async def root():
+    """Redirect to Dashboard"""
+    return RedirectResponse(url="/dashboard")
+
+
+@app.get("/dashboard")
+async def dashboard():
+    """Dashboard UI"""
+    return FileResponse("static/index.html")
+
+
+@app.get("/api/health")
+async def health():
     """Health Check & Info"""
     return {
         "name": settings.APP_NAME,
