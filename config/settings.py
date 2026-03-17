@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     # Mehrere Meta Accounts (JSON-String: {"name": {"app_id": "...", "token": "..."}})
     META_ACCOUNTS: Optional[str] = None
 
+    # LinkedIn Ads
+    LINKEDIN_ACCESS_TOKEN: Optional[str] = None
+    LINKEDIN_AD_ACCOUNT_ID: Optional[str] = None
+
     class Config:
         """Pydantic model configuration."""
 

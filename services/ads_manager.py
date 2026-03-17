@@ -7,6 +7,7 @@ from models.report import PerformanceReport
 from providers.base import AdsProvider
 from providers.google_ads import GoogleAdsProvider
 from providers.meta_ads import MetaAdsProvider
+from providers.linkedin_ads import LinkedInAdsProvider
 from config.settings import settings
 
 
@@ -35,8 +36,11 @@ class AdsManager:
             access_token=settings.META_ACCESS_TOKEN
         )
 
-        # LinkedIn Ads (später hinzufügen)
-        # self._providers["linkedin"] = LinkedInAdsProvider()
+        # LinkedIn Ads
+        self._providers["linkedin"] = LinkedInAdsProvider(
+            access_token=settings.LINKEDIN_ACCESS_TOKEN,
+            ad_account_id=settings.LINKEDIN_AD_ACCOUNT_ID
+        )
 
         # TikTok Ads (später hinzufügen)
         # self._providers["tiktok"] = TikTokAdsProvider()

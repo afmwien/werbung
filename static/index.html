@@ -14,6 +14,7 @@
                     colors: {
                         google: '#4285f4',
                         meta: '#0668E1',
+                        linkedin: '#0A66C2',
                         sidebar: '#1e293b',
                     }
                 }
@@ -91,10 +92,22 @@
                     </div>
                 </button>
 
+                <button @click="switchProvider('linkedin')"
+                        :class="{ 'active': provider === 'linkedin' }"
+                        class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left">
+                    <div class="w-8 h-8 bg-linkedin rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">in</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium">LinkedIn Ads</div>
+                        <div class="text-xs text-slate-400" x-text="stats.linkedin.campaigns + ' Kampagnen'"></div>
+                    </div>
+                </button>
+
                 <button @click="switchProvider('all')"
                         :class="{ 'active': provider === 'all' }"
                         class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left">
-                    <div class="w-8 h-8 bg-gradient-to-br from-google to-meta rounded-lg flex items-center justify-center">
+                    <div class="w-8 h-8 bg-gradient-to-br from-google via-meta to-linkedin rounded-lg flex items-center justify-center">
                         <i data-lucide="layers" class="w-4 h-4"></i>
                     </div>
                     <div class="flex-1">
@@ -181,6 +194,10 @@
                             <span class="flex items-center gap-1">
                                 <span class="w-2 h-2 bg-meta rounded-full"></span>
                                 <span x-text="stats.meta.campaigns"></span>
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <span class="w-2 h-2 bg-linkedin rounded-full"></span>
+                                <span x-text="stats.linkedin.campaigns"></span>
                             </span>
                         </div>
                     </div>
@@ -323,9 +340,9 @@
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
                                                 <div x-show="provider === 'all'"
-                                                     :class="campaign._provider === 'google' ? 'bg-google' : 'bg-meta'"
+                                                     :class="campaign._provider === 'google' ? 'bg-google' : campaign._provider === 'meta' ? 'bg-meta' : 'bg-linkedin'"
                                                      class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold">
-                                                    <span x-text="campaign._provider === 'google' ? 'G' : 'M'"></span>
+                                                    <span x-text="campaign._provider === 'google' ? 'G' : campaign._provider === 'meta' ? 'M' : 'in'"></span>
                                                 </div>
                                                 <div>
                                                     <div class="font-medium text-slate-800" x-text="campaign.name"></div>
@@ -424,6 +441,14 @@
                                class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                placeholder="z.B. act_34886324">
                     </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">LinkedIn Ad Account ID</label>
+                        <input type="text"
+                               x-model="customerIds.linkedin"
+                               class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                               placeholder="z.B. 508123456">
+                    </div>
                 </div>
 
                 <div class="mt-6 flex gap-3">
@@ -450,16 +475,19 @@
                 apiKeyChanged: false,
                 customerIds: {
                     google: localStorage.getItem('googleCustomerId') || '2936775113',
-                    meta: localStorage.getItem('metaCustomerId') || 'act_34886324'
+                    meta: localStorage.getItem('metaCustomerId') || 'act_34886324',
+                    linkedin: localStorage.getItem('linkedinCustomerId') || ''
                 },
                 campaigns: [],
                 cachedCampaigns: {
                     google: [],
-                    meta: []
+                    meta: [],
+                    linkedin: []
                 },
                 stats: {
                     google: { campaigns: 0, active: 0, paused: 0, budget: 0 },
-                    meta: { campaigns: 0, active: 0, paused: 0, budget: 0 }
+                    meta: { campaigns: 0, active: 0, paused: 0, budget: 0 },
+                    linkedin: { campaigns: 0, active: 0, paused: 0, budget: 0 }
                 },
                 performance: {
                     impressions: 0,
@@ -482,6 +510,7 @@
                     const titles = {
                         google: 'Google Ads',
                         meta: 'Meta Ads',
+                        linkedin: 'LinkedIn Ads',
                         all: 'Gesamtübersicht'
                     };
                     return titles[this.provider];
@@ -490,10 +519,10 @@
                 get currentStats() {
                     if (this.provider === 'all') {
                         return {
-                            total: this.stats.google.campaigns + this.stats.meta.campaigns,
-                            active: this.stats.google.active + this.stats.meta.active,
-                            paused: this.stats.google.paused + this.stats.meta.paused,
-                            budget: this.stats.google.budget + this.stats.meta.budget
+                            total: this.stats.google.campaigns + this.stats.meta.campaigns + this.stats.linkedin.campaigns,
+                            active: this.stats.google.active + this.stats.meta.active + this.stats.linkedin.active,
+                            paused: this.stats.google.paused + this.stats.meta.paused + this.stats.linkedin.paused,
+                            budget: this.stats.google.budget + this.stats.meta.budget + this.stats.linkedin.budget
                         };
                     }
                     return {
@@ -535,7 +564,8 @@
                     if (provider === 'all') {
                         this.campaigns = [
                             ...this.cachedCampaigns.google.map(c => ({...c, _provider: 'google'})),
-                            ...this.cachedCampaigns.meta.map(c => ({...c, _provider: 'meta'}))
+                            ...this.cachedCampaigns.meta.map(c => ({...c, _provider: 'meta'})),
+                            ...this.cachedCampaigns.linkedin.map(c => ({...c, _provider: 'linkedin'}))
                         ];
                     } else {
                         this.campaigns = this.cachedCampaigns[provider].map(c => ({...c, _provider: provider}));
@@ -552,10 +582,11 @@
                     this.loading = true;
 
                     try {
-                        // Load both providers
+                        // Load all providers
                         await Promise.all([
                             this.loadProviderCampaigns('google'),
-                            this.loadProviderCampaigns('meta')
+                            this.loadProviderCampaigns('meta'),
+                            this.loadProviderCampaigns('linkedin')
                         ]);
 
                         // Set current campaigns
@@ -766,6 +797,7 @@
                 saveCustomerIds() {
                     localStorage.setItem('googleCustomerId', this.customerIds.google);
                     localStorage.setItem('metaCustomerId', this.customerIds.meta);
+                    localStorage.setItem('linkedinCustomerId', this.customerIds.linkedin);
                 },
 
                 // Helpers
