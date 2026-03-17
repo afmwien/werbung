@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     # API Security
     API_KEY: str = "change-me-in-production"  # WICHTIG: In .env setzen!
+    ALLOWED_IPS: str = ""  # Kommagetrennte Liste erlaubter IPs (leer = alle erlaubt)
 
     # Database
     DATABASE_URL: str = "sqlite:///./ads_manager.db"
