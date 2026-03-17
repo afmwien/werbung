@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from models.campaign import Campaign, CampaignCreate, CampaignUpdate
 from services.ads_manager import AdsManager, get_ads_manager
+from api.security import verify_api_key
 
-router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
+router = APIRouter(prefix="/campaigns", tags=["Campaigns"], dependencies=[Depends(verify_api_key)])
 
 
 @router.get("/{provider}/{customer_id}", response_model=List[Campaign])

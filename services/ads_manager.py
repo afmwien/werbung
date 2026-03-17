@@ -89,6 +89,30 @@ class AdsManager:
         p = self.get_provider(provider)
         return await p.delete_campaign(customer_id, campaign_id)
 
+    # ============== AD GROUP METHODS ==============
+
+    async def get_ad_groups(self, provider: str, customer_id: str, campaign_id: str):
+        """Anzeigengruppen einer Kampagne abrufen"""
+        p = self.get_provider(provider)
+        return await p.get_ad_groups(customer_id, campaign_id)
+
+    async def create_ad_group(self, provider: str, customer_id: str, campaign_id: str, ad_group: dict):
+        """Anzeigengruppe erstellen"""
+        p = self.get_provider(provider)
+        return await p.create_ad_group(customer_id, campaign_id, ad_group)
+
+    # ============== AD METHODS ==============
+
+    async def get_ads(self, provider: str, customer_id: str, ad_group_id: str):
+        """Anzeigen einer Anzeigengruppe abrufen"""
+        p = self.get_provider(provider)
+        return await p.get_ads(customer_id, ad_group_id)
+
+    async def create_ad(self, provider: str, customer_id: str, ad_group_id: str, ad: dict):
+        """Anzeige erstellen"""
+        p = self.get_provider(provider)
+        return await p.create_ad(customer_id, ad_group_id, ad)
+
     # ============== REPORT METHODS ==============
 
     async def get_performance_report(

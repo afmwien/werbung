@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
+    # API Security
+    API_KEY: str = "change-me-in-production"  # WICHTIG: In .env setzen!
+
     # Database
     DATABASE_URL: str = "sqlite:///./ads_manager.db"
 
