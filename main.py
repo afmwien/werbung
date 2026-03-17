@@ -28,7 +28,7 @@ app = FastAPI(
 
     ### Unterstützte Plattformen
     - ✅ Google Ads
-    - 🔜 Meta Ads (Facebook/Instagram)
+    - ✅ Meta Ads (Facebook/Instagram)
     - 🔜 LinkedIn Ads
     - 🔜 TikTok Ads
 

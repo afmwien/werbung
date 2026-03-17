@@ -6,9 +6,8 @@ from models.campaign import Campaign, CampaignCreate, CampaignUpdate
 from models.report import PerformanceReport
 from providers.base import AdsProvider
 from providers.google_ads import GoogleAdsProvider
-
-# Später hinzufügen:
-# from providers.meta_ads import MetaAdsProvider
+from providers.meta_ads import MetaAdsProvider
+from config.settings import settings
 
 
 class AdsManager:
@@ -29,8 +28,12 @@ class AdsManager:
         # Google Ads
         self._providers["google"] = GoogleAdsProvider()
 
-        # Meta Ads (später hinzufügen)
-        # self._providers["meta"] = MetaAdsProvider()
+        # Meta Ads
+        self._providers["meta"] = MetaAdsProvider(
+            app_id=settings.META_APP_ID,
+            app_secret=settings.META_APP_SECRET,
+            access_token=settings.META_ACCESS_TOKEN
+        )
 
         # LinkedIn Ads (später hinzufügen)
         # self._providers["linkedin"] = LinkedInAdsProvider()

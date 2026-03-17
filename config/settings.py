@@ -28,10 +28,12 @@ class Settings(BaseSettings):
     GOOGLE_ADS_LOGIN_CUSTOMER_ID: Optional[str] = None
     GOOGLE_ADS_CUSTOMER_ID: Optional[str] = None
 
-    # Meta Ads (für spätere Erweiterung)
-    # META_APP_ID: Optional[str] = None
-    # META_APP_SECRET: Optional[str] = None
-    # META_ACCESS_TOKEN: Optional[str] = None
+    # Meta Ads
+    META_APP_ID: Optional[str] = None
+    META_APP_SECRET: Optional[str] = None
+    META_ACCESS_TOKEN: Optional[str] = None
+    # Mehrere Meta Accounts (JSON-String: {"name": {"app_id": "...", "token": "..."}})
+    META_ACCOUNTS: Optional[str] = None
 
     class Config:
         """Pydantic model configuration."""

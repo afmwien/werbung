@@ -10,8 +10,8 @@ pydantic-settings>=2.0.0
 # Google Ads
 google-ads>=21.0.0
 
-# Meta Ads (später aktivieren)
-# facebook-business>=17.0.0
+# Meta Ads
+facebook-business>=17.0.0
 
 # Database (optional)
 # sqlalchemy>=2.0.0
