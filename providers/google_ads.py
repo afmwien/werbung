@@ -8,6 +8,10 @@ from typing import List, Optional
 from models.ad import Ad, AdStatus, AdType
 from models.ad_group import AdGroup, AdGroupStatus
 from models.campaign import Campaign, CampaignCreate, CampaignUpdate, CampaignStatus, CampaignType
+from models.recommendation import (
+    Recommendation, RecommendationsResponse, RecommendationType,
+    RecommendationImpact, BudgetRecommendation, KeywordRecommendation
+)
 from models.report import CampaignPerformance, PerformanceMetrics, PerformanceReport
 
 from .base import AdsProvider
@@ -576,3 +580,196 @@ class GoogleAdsProvider(AdsProvider):
             "VIDEO_AD": AdType.VIDEO,
         }
         return mapping.get(ad_type, AdType.UNKNOWN)
+
+    # ============== RECOMMENDATIONS ==============
+
+    async def get_recommendations(self, customer_id: str) -> RecommendationsResponse:
+        """
+        Google Ads Optimierungsempfehlungen abrufen.
+
+        Nutzt Google's ML-basierte Recommendations API für:
+        - Budget-Empfehlungen
+        - Keyword-Vorschläge
+        - Bidding-Strategien
+        - Ad-Verbesserungen
+        """
+        if not self.client:
+            await self.authenticate()
+
+        ga_service = self.client.get_service("GoogleAdsService")
+
+        # Recommendations Query
+        query = """
+            SELECT
+                recommendation.resource_name,
+                recommendation.type,
+                recommendation.impact,
+                recommendation.campaign,
+                recommendation.ad_group,
+                recommendation.dismissed,
+                recommendation.campaign_budget_recommendation,
+                recommendation.keyword_recommendation,
+                campaign.id,
+                campaign.name
+            FROM recommendation
+            WHERE recommendation.dismissed = FALSE
+        """
+
+        recommendations = []
+        optimization_score = None
+
+        try:
+            # Recommendations abrufen
+            response = ga_service.search(customer_id=customer_id, query=query)
+
+            for row in response:
+                rec = row.recommendation
+                recommendation = self._map_recommendation(rec, row.campaign)
+                recommendations.append(recommendation)
+
+            # Optimization Score abrufen
+            score_query = """
+                SELECT
+                    customer.optimization_score
+                FROM customer
+            """
+            score_response = ga_service.search(customer_id=customer_id, query=score_query)
+            for score_row in score_response:
+                optimization_score = score_row.customer.optimization_score
+
+        except GoogleAdsException as ex:
+            raise GoogleAdsError(f"Google Ads Fehler: {ex.failure.errors[0].message}") from ex
+
+        return RecommendationsResponse(
+            customer_id=customer_id,
+            total_count=len(recommendations),
+            recommendations=recommendations,
+            optimization_score=optimization_score
+        )
+
+    async def apply_recommendation(self, customer_id: str, recommendation_resource_name: str) -> bool:
+        """Eine Empfehlung anwenden."""
+        if not self.client:
+            await self.authenticate()
+
+        recommendation_service = self.client.get_service("RecommendationService")
+
+        try:
+            apply_operation = self.client.get_type("ApplyRecommendationOperation")
+            apply_operation.resource_name = recommendation_resource_name
+
+            response = recommendation_service.apply_recommendation(
+                customer_id=customer_id,
+                operations=[apply_operation]
+            )
+            return len(response.results) > 0
+
+        except GoogleAdsException as ex:
+            raise GoogleAdsError(f"Empfehlung konnte nicht angewendet werden: {ex.failure.errors[0].message}") from ex
+
+    async def dismiss_recommendation(self, customer_id: str, recommendation_resource_name: str) -> bool:
+        """Eine Empfehlung ablehnen/ausblenden."""
+        if not self.client:
+            await self.authenticate()
+
+        recommendation_service = self.client.get_service("RecommendationService")
+
+        try:
+            dismiss_operation = self.client.get_type("DismissRecommendationRequest.DismissRecommendationOperation")
+            dismiss_operation.resource_name = recommendation_resource_name
+
+            response = recommendation_service.dismiss_recommendation(
+                customer_id=customer_id,
+                operations=[dismiss_operation]
+            )
+            return len(response.results) > 0
+
+        except GoogleAdsException as ex:
+            raise GoogleAdsError(f"Empfehlung konnte nicht abgelehnt werden: {ex.failure.errors[0].message}") from ex
+
+    def _map_recommendation(self, rec, campaign) -> Recommendation:
+        """Google Recommendation zu einheitlichem Model mappen."""
+        # Type mapping
+        rec_type = self._map_recommendation_type(rec.type.name)
+
+        # Impact mapping
+        impact = None
+        if rec.impact:
+            impact = RecommendationImpact(
+                base_metrics_impressions=rec.impact.base_metrics.impressions if rec.impact.base_metrics else None,
+                base_metrics_clicks=rec.impact.base_metrics.clicks if rec.impact.base_metrics else None,
+                base_metrics_cost_micros=rec.impact.base_metrics.cost_micros if rec.impact.base_metrics else None,
+                base_metrics_conversions=rec.impact.base_metrics.conversions if rec.impact.base_metrics else None,
+                potential_metrics_impressions=rec.impact.potential_metrics.impressions if rec.impact.potential_metrics else None,
+                potential_metrics_clicks=rec.impact.potential_metrics.clicks if rec.impact.potential_metrics else None,
+                potential_metrics_cost_micros=rec.impact.potential_metrics.cost_micros if rec.impact.potential_metrics else None,
+                potential_metrics_conversions=rec.impact.potential_metrics.conversions if rec.impact.potential_metrics else None,
+            )
+
+        # Budget recommendation
+        budget_rec = None
+        if rec.campaign_budget_recommendation:
+            cbr = rec.campaign_budget_recommendation
+            budget_rec = BudgetRecommendation(
+                current_budget_micros=cbr.current_budget_amount_micros if cbr.current_budget_amount_micros else None,
+                recommended_budget_micros=cbr.recommended_budget_amount_micros if cbr.recommended_budget_amount_micros else None,
+            )
+
+        # Keyword recommendation
+        keyword_rec = None
+        if rec.keyword_recommendation:
+            kr = rec.keyword_recommendation
+            keyword_rec = KeywordRecommendation(
+                keyword=kr.keyword.text if kr.keyword else None,
+                match_type=kr.keyword.match_type.name if kr.keyword else None,
+            )
+
+        # Description generieren
+        description = self._generate_recommendation_description(rec_type, budget_rec, keyword_rec)
+
+        return Recommendation(
+            resource_name=rec.resource_name,
+            recommendation_type=rec_type,
+            campaign_id=str(campaign.id) if campaign else None,
+            campaign_name=campaign.name if campaign else None,
+            impact=impact,
+            budget_recommendation=budget_rec,
+            keyword_recommendation=keyword_rec,
+            description=description,
+            dismissed=rec.dismissed
+        )
+
+    def _map_recommendation_type(self, type_name: str) -> RecommendationType:
+        """Google Recommendation Type zu einheitlichem Typ."""
+        try:
+            return RecommendationType(type_name.lower())
+        except ValueError:
+            return RecommendationType.UNKNOWN
+
+    def _generate_recommendation_description(
+        self, rec_type: RecommendationType,
+        budget_rec: Optional[BudgetRecommendation],
+        keyword_rec: Optional[KeywordRecommendation]
+    ) -> str:
+        """Menschenlesbare Beschreibung generieren."""
+        descriptions = {
+            RecommendationType.CAMPAIGN_BUDGET: "Budget erhöhen für mehr Reichweite",
+            RecommendationType.KEYWORD: f"Neues Keyword hinzufügen: {keyword_rec.keyword if keyword_rec else ''}",
+            RecommendationType.TARGET_CPA_OPT_IN: "Ziel-CPA Bidding aktivieren",
+            RecommendationType.MAXIMIZE_CONVERSIONS_OPT_IN: "Conversions maximieren aktivieren",
+            RecommendationType.MAXIMIZE_CLICKS_OPT_IN: "Klicks maximieren aktivieren",
+            RecommendationType.RESPONSIVE_SEARCH_AD: "Responsive Search Ad erstellen",
+            RecommendationType.RESPONSIVE_SEARCH_AD_IMPROVE_AD_STRENGTH: "Anzeigeneffektivität verbessern",
+            RecommendationType.USE_BROAD_MATCH_KEYWORD: "Broad Match für mehr Reichweite",
+            RecommendationType.SITELINK_ASSET: "Sitelink-Erweiterung hinzufügen",
+            RecommendationType.CALLOUT_ASSET: "Callout-Erweiterung hinzufügen",
+            RecommendationType.CALL_ASSET: "Anruf-Erweiterung hinzufügen",
+        }
+
+        base_desc = descriptions.get(rec_type, f"Empfehlung: {rec_type.value}")
+
+        # Budget-spezifische Details
+        if budget_rec and budget_rec.recommended_budget_euros:
+            base_desc += f" (Empfohlen: €{budget_rec.recommended_budget_euros:.2f}/Tag)"
+
+        return base_desc

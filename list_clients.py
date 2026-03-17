@@ -2,6 +2,7 @@
 from google.ads.googleads.client import GoogleAdsClient
 
 def list_clients():
+    """Alle verknüpften Client-Accounts des Managers auflisten."""
     client = GoogleAdsClient.load_from_storage("config/google-ads.yaml")
 
     # Manager-Account ID

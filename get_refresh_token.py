@@ -7,6 +7,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 SCOPES = ['https://www.googleapis.com/auth/adwords']
 
 def main():
+    """Refresh Token über OAuth2-Flow generieren."""
     # Pfad zur heruntergeladenen JSON-Datei
     client_secrets_path = input("Pfad zur client_secret JSON-Datei: ").strip()
 

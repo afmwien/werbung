@@ -6,6 +6,7 @@ from models.campaign import Campaign, CampaignCreate, CampaignUpdate
 from models.ad_group import AdGroup
 from models.ad import Ad
 from models.report import PerformanceReport
+from models.recommendation import RecommendationsResponse
 
 
 class AdsProvider(ABC):
@@ -101,3 +102,17 @@ class AdsProvider(ABC):
     ) -> PerformanceReport:
         """Performance-Bericht abrufen"""
         ...
+
+    # ============== RECOMMENDATIONS ==============
+
+    async def get_recommendations(self, customer_id: str) -> RecommendationsResponse:
+        """Optimierungsempfehlungen abrufen (optional)"""
+        raise NotImplementedError(f"Provider '{self.provider_name}' unterstützt keine Empfehlungen")
+
+    async def apply_recommendation(self, customer_id: str, recommendation_resource_name: str) -> bool:
+        """Eine Empfehlung anwenden (optional)"""
+        raise NotImplementedError(f"Provider '{self.provider_name}' unterstützt keine Empfehlungen")
+
+    async def dismiss_recommendation(self, customer_id: str, recommendation_resource_name: str) -> bool:
+        """Eine Empfehlung ablehnen (optional)"""
+        raise NotImplementedError(f"Provider '{self.provider_name}' unterstützt keine Empfehlungen")

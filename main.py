@@ -11,6 +11,7 @@ from api.campaigns import router as campaigns_router
 from api.ad_groups import router as ad_groups_router
 from api.ads import router as ads_router
 from api.reports import router as reports_router
+from api.recommendations import router as recommendations_router
 
 # Rate Limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -69,6 +70,7 @@ app.include_router(campaigns_router, prefix="/api")
 app.include_router(ad_groups_router, prefix="/api")
 app.include_router(ads_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
+app.include_router(recommendations_router, prefix="/api")
 
 
 @app.get("/")
