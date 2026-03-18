@@ -123,6 +123,68 @@ class AdsManager:
         p = self.get_provider(provider)
         return await p.create_ad(customer_id, ad_group_id, ad)
 
+    async def get_campaign_preview(self, provider: str, customer_id: str, campaign_id: str) -> dict:
+        """Kampagnen-Vorschau mit allen Anzeigen abrufen"""
+        p = self.get_provider(provider)
+
+        preview = {
+            "campaign_id": campaign_id,
+            "provider": provider,
+            "ad_groups": [],
+            "ads": [],
+            "total_ads": 0
+        }
+
+        try:
+            # Kampagne abrufen
+            campaign = await p.get_campaign(customer_id, campaign_id)
+            if campaign:
+                preview["campaign"] = {
+                    "id": campaign.id,
+                    "name": campaign.name,
+                    "status": campaign.status,
+                    "type": campaign.campaign_type
+                }
+
+            # Ad-Gruppen und Ads abrufen
+            ad_groups = await p.get_ad_groups(customer_id, campaign_id)
+
+            for ad_group in ad_groups:
+                ag_data = {
+                    "id": ad_group.id,
+                    "name": ad_group.name,
+                    "status": ad_group.status,
+                    "ads": []
+                }
+
+                # Ads für diese Ad-Gruppe
+                ads = await p.get_ads(customer_id, ad_group.id)
+                for ad in ads:
+                    ad_data = {
+                        "id": ad.id,
+                        "name": ad.name,
+                        "status": ad.status,
+                        "type": ad.ad_type,
+                        "headlines": ad.headlines,
+                        "descriptions": ad.descriptions,
+                        "final_urls": ad.final_urls,
+                        "image_url": ad.image_urls[0] if ad.image_urls else None,
+                        "image_urls": ad.image_urls,
+                        "video_id": ad.video_id,
+                        "raw_data": ad.raw_data
+                    }
+                    ag_data["ads"].append(ad_data)
+                    preview["ads"].append(ad_data)
+
+                preview["ad_groups"].append(ag_data)
+
+            preview["total_ads"] = len(preview["ads"])
+
+        except Exception as e:
+            preview["error"] = str(e)
+
+        return preview
+
     # ============== REPORT METHODS ==============
 
     async def get_performance_report(

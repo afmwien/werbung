@@ -133,3 +133,25 @@ async def delete_campaign(
         return {"success": success, "message": "Kampagne gelöscht"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/{provider}/{customer_id}/{campaign_id}/preview")
+async def get_campaign_preview(
+    provider: str,
+    customer_id: str,
+    campaign_id: str,
+    ads_manager: AdsManager = Depends(get_ads_manager)
+):
+    """
+    Kampagnen-Vorschau mit allen Anzeigen
+
+    Gibt alle Ad-Gruppen und Anzeigen einer Kampagne zurück
+    für eine detaillierte Vorschau.
+    """
+    try:
+        preview = await ads_manager.get_campaign_preview(provider, customer_id, campaign_id)
+        return preview
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e

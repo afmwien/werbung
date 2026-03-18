@@ -24,6 +24,7 @@ try:
     from facebook_business.adobjects.campaign import Campaign as FBCampaign
     from facebook_business.adobjects.adset import AdSet
     from facebook_business.adobjects.ad import Ad as FBAd
+    from facebook_business.adobjects.adcreative import AdCreative
     from facebook_business.adobjects.adsinsights import AdsInsights
     from facebook_business.exceptions import FacebookRequestError
     META_ADS_AVAILABLE = True
@@ -34,6 +35,7 @@ except ImportError:
     FBCampaign: Any = None
     AdSet: Any = None
     FBAd: Any = None
+    AdCreative: Any = None
     AdsInsights: Any = None
     FacebookRequestError: Any = Exception
 
@@ -366,7 +368,7 @@ class MetaAdsProvider(AdsProvider):
     # ============== ADS ==============
 
     async def get_ads(self, customer_id: str, ad_group_id: str) -> List[Ad]:
-        """Alle Ads eines Ad Sets"""
+        """Alle Ads eines Ad Sets mit Creative-Details"""
         if not self._initialized:
             await self.authenticate()
 
@@ -380,16 +382,182 @@ class MetaAdsProvider(AdsProvider):
                 FBAd.Field.status,
                 FBAd.Field.creative,
                 FBAd.Field.created_time,
+                FBAd.Field.effective_status,
             ])
 
             for fb_ad in fb_ads:
-                ad = self._map_ad(fb_ad, ad_group_id)
+                ad = self._map_ad_with_creative(fb_ad, ad_group_id)
                 ads.append(ad)
 
         except FacebookRequestError as ex:
             raise MetaAdsError(f"Ads konnten nicht abgerufen werden: {ex.api_error_message()}") from ex
 
         return ads
+
+    def _get_creative_details(self, creative_id: str) -> dict:
+        """Creative-Details abrufen (Bilder, Videos, Texte)"""
+        try:
+            creative = AdCreative(creative_id)
+            creative.api_get(fields=[
+                AdCreative.Field.id,
+                AdCreative.Field.name,
+                AdCreative.Field.title,
+                AdCreative.Field.body,
+                AdCreative.Field.call_to_action_type,
+                AdCreative.Field.image_url,
+                AdCreative.Field.thumbnail_url,
+                AdCreative.Field.video_id,
+                AdCreative.Field.object_story_spec,
+                AdCreative.Field.asset_feed_spec,
+                AdCreative.Field.effective_object_story_id,
+            ])
+
+            details = {
+                "id": creative.get("id"),
+                "name": creative.get("name"),
+                "title": creative.get("title"),
+                "body": creative.get("body"),
+                "cta": creative.get("call_to_action_type"),
+                "image_url": creative.get("image_url"),
+                "thumbnail_url": creative.get("thumbnail_url"),
+                "video_id": creative.get("video_id"),
+            }
+
+            # Object Story Spec enthält oft mehr Details
+            story_spec = creative.get("object_story_spec", {})
+            if story_spec:
+                # Link Ad
+                link_data = story_spec.get("link_data", {})
+                if link_data:
+                    details["link"] = link_data.get("link")
+                    details["message"] = link_data.get("message")
+                    details["caption"] = link_data.get("caption")
+                    details["description"] = link_data.get("description")
+                    if not details["image_url"]:
+                        details["image_url"] = link_data.get("image_hash") or link_data.get("picture")
+
+                # Video Ad
+                video_data = story_spec.get("video_data", {})
+                if video_data:
+                    details["video_id"] = video_data.get("video_id")
+                    details["message"] = video_data.get("message")
+                    details["title"] = video_data.get("title")
+                    if not details["thumbnail_url"]:
+                        details["thumbnail_url"] = video_data.get("image_url")
+
+            # Asset Feed Spec für Dynamic Creatives
+            asset_feed = creative.get("asset_feed_spec", {})
+            if asset_feed:
+                # Mehrere Headlines/Beschreibungen
+                titles = asset_feed.get("titles", [])
+                if titles:
+                    details["headlines"] = [t.get("text") for t in titles if t.get("text")]
+
+                bodies = asset_feed.get("bodies", [])
+                if bodies:
+                    details["descriptions"] = [b.get("text") for b in bodies if b.get("text")]
+
+                # Bilder
+                images = asset_feed.get("images", [])
+                if images:
+                    details["image_urls"] = [img.get("url") for img in images if img.get("url")]
+
+                # Videos
+                videos = asset_feed.get("videos", [])
+                if videos:
+                    details["video_ids"] = [v.get("video_id") for v in videos if v.get("video_id")]
+
+            return details
+
+        except Exception:
+            return {}
+
+    def _map_ad_with_creative(self, fb_ad, ad_group_id: str) -> Ad:
+        """Facebook Ad mit Creative-Details mappen"""
+        # Creative kann verschiedene Formate haben
+        creative_data = fb_ad.get("creative")
+        creative_id = None
+
+        if creative_data:
+            if isinstance(creative_data, dict):
+                creative_id = creative_data.get("id")
+            elif isinstance(creative_data, str):
+                creative_id = creative_data
+            elif hasattr(creative_data, "get_id"):
+                creative_id = creative_data.get_id()
+            elif hasattr(creative_data, "__getitem__"):
+                try:
+                    creative_id = creative_data["id"]
+                except (KeyError, TypeError):
+                    pass
+
+        # Fallback: Creative-ID direkt von der Ad abrufen
+        if not creative_id:
+            try:
+                ad_obj = FBAd(fb_ad.get_id())
+                ad_obj.api_get(fields=["creative"])
+                creative_ref = ad_obj.get("creative")
+                if creative_ref:
+                    if isinstance(creative_ref, dict):
+                        creative_id = creative_ref.get("id")
+                    elif hasattr(creative_ref, "get_id"):
+                        creative_id = creative_ref.get_id()
+            except Exception:
+                pass
+
+        # Creative-Details abrufen wenn vorhanden
+        creative_details = {}
+        if creative_id:
+            creative_details = self._get_creative_details(creative_id)
+
+        # Ad-Typ bestimmen
+        ad_type = AdType.RESPONSIVE_DISPLAY
+        if creative_details.get("video_id") or creative_details.get("video_ids"):
+            ad_type = AdType.VIDEO
+        elif creative_details.get("headlines") and len(creative_details.get("headlines", [])) > 1:
+            ad_type = AdType.CAROUSEL
+
+        # URLs sammeln
+        final_urls = []
+        if creative_details.get("link"):
+            final_urls.append(creative_details["link"])
+
+        # Bild-URLs
+        image_urls = creative_details.get("image_urls", [])
+        if creative_details.get("image_url") and creative_details["image_url"] not in image_urls:
+            image_urls.insert(0, creative_details["image_url"])
+        if creative_details.get("thumbnail_url") and creative_details["thumbnail_url"] not in image_urls:
+            image_urls.append(creative_details["thumbnail_url"])
+
+        # Headlines und Beschreibungen
+        headlines = creative_details.get("headlines", [])
+        if creative_details.get("title") and creative_details["title"] not in headlines:
+            headlines.insert(0, creative_details["title"])
+
+        descriptions = creative_details.get("descriptions", [])
+        if creative_details.get("body") and creative_details["body"] not in descriptions:
+            descriptions.insert(0, creative_details["body"])
+        if creative_details.get("message") and creative_details["message"] not in descriptions:
+            descriptions.insert(0, creative_details["message"])
+
+        return Ad(
+            id=fb_ad.get_id(),
+            ad_group_id=ad_group_id,
+            name=fb_ad.get(FBAd.Field.name, ""),
+            status=self._map_meta_status_to_ad(fb_ad.get(FBAd.Field.status)),
+            ad_type=ad_type,
+            headlines=headlines if headlines else None,
+            descriptions=descriptions if descriptions else None,
+            final_urls=final_urls if final_urls else None,
+            image_urls=image_urls if image_urls else None,
+            video_id=creative_details.get("video_id"),
+            provider="meta",
+            raw_data={
+                "creative_id": creative_id,
+                "cta": creative_details.get("cta"),
+                "effective_status": fb_ad.get("effective_status"),
+            }
+        )
 
     async def create_ad(self, customer_id: str, ad_group_id: str, ad: dict) -> Ad:
         """Ad erstellen"""

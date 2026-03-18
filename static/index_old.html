@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="de" x-data="dashboard()" x-init="init()">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ads Manager</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        google: '#4285f4',
+                        meta: '#0668E1',
+                        linkedin: '#0A66C2',
+                        sidebar: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+        .sidebar-item.active { background: rgba(255,255,255,0.1); }
+    </style>
+</head>
+
+<body class="bg-slate-100 min-h-screen">
+    <!-- Toast Container -->
+    <div class="fixed top-4 right-4 z-50 space-y-2">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div x-show="toast.show"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-x-8"
+                 x-transition:enter-end="opacity-100 transform translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 :class="toast.type === 'success' ? 'bg-green-500' : toast.type === 'error' ? 'bg-red-500' : 'bg-slate-700'"
+                 class="px-4 py-3 rounded-lg text-white shadow-lg flex items-center gap-2">
+                <span x-text="toast.message"></span>
+            </div>
+        </template>
+    </div>
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-sidebar text-white flex flex-col">
+            <!-- Logo -->
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-semibold flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+                    Ads Manager
+                </h1>
+            </div>
+
+            <!-- Clients Navigation -->
+            <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+                <div class="text-xs text-slate-400 uppercase tracking-wider px-4 py-2">Unternehmen</div>
+
+                <template x-for="client in clients" :key="client.id">
+                    <button @click="switchClient(client.id)"
+                            :class="{ 'active': selectedClient === client.id }"
+                            class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
+                             :style="'background-color: ' + client.color + '20; color: ' + client.color">
+                            <span x-text="client.icon"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium truncate" x-text="client.name"></div>
+                            <div class="text-xs text-slate-400" x-text="getClientBudgetDisplay(client.id)"></div>
+                        </div>
+                    </button>
+                </template>
+
+                <div class="pt-4 mt-4 border-t border-slate-700">
+                    <button @click="switchClient('all')"
+                            :class="{ 'active': selectedClient === 'all' }"
+                            class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left">
+                        <div class="w-8 h-8 bg-gradient-to-br from-google via-meta to-linkedin rounded-lg flex items-center justify-center">
+                            <i data-lucide="layers" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium">Gesamtübersicht</div>
+                            <div class="text-xs text-slate-400" x-text="getTotalBudgetDisplay()"></div>
+                        </div>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Settings -->
+            <div class="p-4 border-t border-slate-700">
+                <button @click="showSettings = true"
+                        class="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors text-slate-400 hover:text-white">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>Einstellungen</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto">
+            <!-- Header -->
+            <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+                <div>
+                    <h2 class="text-2xl font-semibold text-slate-800 flex items-center gap-2">
+                        <span x-text="currentClientIcon" class="text-2xl" x-show="selectedClient !== 'all'"></span>
+                        <span x-text="currentClientName"></span>
+                    </h2>
+                    <p class="text-sm text-slate-500" x-text="'Aktualisiert: ' + lastUpdate"></p>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <!-- Platform Filter -->
+                    <div class="flex items-center gap-2 bg-slate-100 rounded-lg p-1" x-show="selectedClient !== 'all'">
+                        <button @click="platformFilter = 'all'"
+                                :class="platformFilter === 'all' ? 'bg-white shadow' : ''"
+                                class="px-3 py-1.5 rounded-md text-sm font-medium transition-all">
+                            Alle
+                        </button>
+                        <template x-for="plat in getAvailablePlatforms()" :key="plat">
+                            <button @click="platformFilter = plat"
+                                    :class="platformFilter === plat ? 'bg-white shadow' : ''"
+                                    class="px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1">
+                                <span :class="'w-2 h-2 rounded-full bg-' + plat"></span>
+                                <span x-text="plat.charAt(0).toUpperCase() + plat.slice(1)"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <!-- Refresh Button -->
+                    <button @click="loadData()"
+                            :disabled="loading"
+                            class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50">
+                        <i data-lucide="refresh-cw" class="w-4 h-4" :class="{ 'animate-spin': loading }"></i>
+                        <span>Aktualisieren</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div class="p-8">
+                <!-- API Key Warning -->
+                <div x-show="!apiKey" class="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="key" class="w-5 h-5 text-amber-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-amber-800">API-Key erforderlich</h3>
+                            <p class="text-amber-700 text-sm mt-1">Bitte gib deinen API-Key in den Einstellungen ein.</p>
+                            <button @click="showSettings = true" class="mt-3 text-sm font-medium text-amber-800 hover:text-amber-900 flex items-center gap-1">
+                                Einstellungen öffnen
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-medium text-slate-500">Kampagnen</span>
+                            <div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="megaphone" class="w-5 h-5 text-slate-600"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-800" x-text="currentStats.total"></div>
+                        <div class="mt-2 flex gap-4 text-sm">
+                            <template x-for="plat in ['google', 'meta', 'linkedin']" :key="plat">
+                                <span class="flex items-center gap-1" x-show="currentStats.platforms && currentStats.platforms[plat]">
+                                    <span :class="'w-2 h-2 bg-' + plat + ' rounded-full'"></span>
+                                    <span x-text="currentStats.platforms[plat]?.count || 0"></span>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-medium text-slate-500">Aktiv</span>
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="play-circle" class="w-5 h-5 text-green-600"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-green-600" x-text="currentStats.active"></div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-medium text-slate-500">Pausiert</span>
+                            <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="pause-circle" class="w-5 h-5 text-amber-600"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-amber-600" x-text="currentStats.paused"></div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-medium text-slate-500">Tagesbudget</span>
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="euro" class="w-5 h-5 text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-800" x-text="formatCurrency(currentStats.budget)"></div>
+                    </div>
+                </div>
+
+                <!-- Platform Cards (for single client view) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" x-show="selectedClient !== 'all' && currentStats.platforms">
+                    <template x-for="plat in ['google', 'meta', 'linkedin']" :key="plat">
+                        <div x-show="currentStats.platforms && currentStats.platforms[plat]"
+                             @click="platformFilter = platformFilter === plat ? 'all' : plat"
+                             class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition-shadow"
+                             :class="platformFilter === plat ? 'ring-2 ring-offset-2' : ''"
+                             :style="platformFilter === plat ? '--tw-ring-color: ' + (plat === 'google' ? '#4285f4' : plat === 'meta' ? '#0668E1' : '#0A66C2') : ''">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div :class="'w-10 h-10 bg-' + plat + ' rounded-lg flex items-center justify-center'">
+                                    <span class="text-white font-bold text-sm" x-text="plat === 'linkedin' ? 'in' : plat.charAt(0).toUpperCase()"></span>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-slate-800" x-text="plat.charAt(0).toUpperCase() + plat.slice(1) + ' Ads'"></div>
+                                    <div class="text-xs text-slate-500" x-text="'Account: ' + (currentStats.platforms[plat]?.account_id || '-')"></div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <div class="text-slate-500">Kampagnen</div>
+                                    <div class="font-semibold" x-text="currentStats.platforms[plat]?.count || 0"></div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-500">Aktiv</div>
+                                    <div class="font-semibold text-green-600" x-text="currentStats.platforms[plat]?.active || 0"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Campaigns Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                    <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="list" class="w-5 h-5"></i>
+                            Kampagnen
+                        </h3>
+                        <span class="text-sm text-slate-500" x-text="filteredCampaigns.length + ' Einträge'"></span>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div x-show="loading" class="p-12 text-center">
+                        <div class="inline-flex items-center gap-2 text-slate-500">
+                            <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
+                            <span>Lade Kampagnen...</span>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div x-show="!loading && filteredCampaigns.length === 0" class="p-12 text-center">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="inbox" class="w-8 h-8 text-slate-400"></i>
+                        </div>
+                        <h4 class="font-medium text-slate-600">Keine Kampagnen gefunden</h4>
+                        <p class="text-sm text-slate-400 mt-1">Kampagnen mit dem Präfix werden hier angezeigt</p>
+                    </div>
+
+                    <!-- Table -->
+                    <div x-show="!loading && filteredCampaigns.length > 0" class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200">
+                                    <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kampagne</th>
+                                    <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plattform</th>
+                                    <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                                    <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Budget</th>
+                                    <th class="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200">
+                                <template x-for="campaign in filteredCampaigns" :key="campaign.id + '-' + campaign._platform">
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <div x-show="selectedClient === 'all'"
+                                                     class="w-6 h-6 rounded flex items-center justify-center text-xs"
+                                                     :style="'background-color: ' + (campaign._clientColor || '#6B7280') + '20; color: ' + (campaign._clientColor || '#6B7280')">
+                                                    <span x-text="campaign._clientIcon || '?'"></span>
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium text-slate-800" x-text="campaign.name"></div>
+                                                    <div class="text-xs text-slate-400" x-text="'ID: ' + campaign.id"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-2">
+                                                <span :class="'w-6 h-6 bg-' + campaign._platform + ' rounded flex items-center justify-center text-white text-xs font-bold'"
+                                                      x-text="campaign._platform === 'linkedin' ? 'in' : campaign._platform.charAt(0).toUpperCase()"></span>
+                                                <span class="text-sm text-slate-600" x-text="campaign._platform.charAt(0).toUpperCase() + campaign._platform.slice(1)"></span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span :class="{
+                                                'bg-green-100 text-green-700': campaign.status === 'enabled' || campaign.status === 'ENABLED',
+                                                'bg-amber-100 text-amber-700': campaign.status === 'paused' || campaign.status === 'PAUSED',
+                                                'bg-red-100 text-red-700': campaign.status === 'removed' || campaign.status === 'REMOVED'
+                                            }" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium">
+                                                <span class="w-1.5 h-1.5 rounded-full" :class="{
+                                                    'bg-green-500': campaign.status === 'enabled' || campaign.status === 'ENABLED',
+                                                    'bg-amber-500': campaign.status === 'paused' || campaign.status === 'PAUSED',
+                                                    'bg-red-500': campaign.status === 'removed' || campaign.status === 'REMOVED'
+                                                }"></span>
+                                                <span x-text="(campaign.status === 'enabled' || campaign.status === 'ENABLED') ? 'Aktiv' : (campaign.status === 'paused' || campaign.status === 'PAUSED') ? 'Pausiert' : 'Entfernt'"></span>
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="font-medium text-slate-800" x-text="formatBudget(campaign)"></span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <button @click="loadPreview(campaign)"
+                                                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-500 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors"
+                                                        title="Vorschau">
+                                                    <i data-lucide="eye" class="w-3 h-3"></i>
+                                                </button>
+                                                <button x-show="campaign.status === 'paused' || campaign.status === 'PAUSED'"
+                                                        @click="enableCampaign(campaign)"
+                                                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors">
+                                                    <i data-lucide="play" class="w-3 h-3"></i>
+                                                    Aktivieren
+                                                </button>
+                                                <button x-show="campaign.status === 'enabled' || campaign.status === 'ENABLED'"
+                                                        @click="pauseCampaign(campaign)"
+                                                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg transition-colors">
+                                                    <i data-lucide="pause" class="w-3 h-3"></i>
+                                                    Pausieren
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div x-show="showSettings" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div x-show="showSettings"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 @click="showSettings = false"
+                 class="fixed inset-0 bg-black/50"></div>
+
+            <div x-show="showSettings"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-slate-800">Einstellungen</h3>
+                    <button @click="showSettings = false" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-5 h-5 text-slate-500"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">API-Key</label>
+                        <input type="password"
+                               x-model="apiKeyInput"
+                               @input="apiKeyChanged = true"
+                               class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                               placeholder="API-Key eingeben...">
+                    </div>
+                </div>
+
+                <div class="mt-6 flex gap-3">
+                    <button @click="showSettings = false" class="flex-1 px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+                        Abbrechen
+                    </button>
+                    <button @click="saveSettings()" class="flex-1 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors">
+                        Speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div x-show="showPreview" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div x-show="showPreview"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 @click="showPreview = false"
+                 class="fixed inset-0 bg-black/50"></div>
+
+            <div x-show="showPreview"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 class="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="eye" class="w-5 h-5"></i>
+                        Kampagnen-Vorschau
+                    </h3>
+                    <button @click="showPreview = false" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-5 h-5 text-slate-500"></i>
+                    </button>
+                </div>
+
+                <!-- Loading -->
+                <div x-show="previewLoading" class="py-12 text-center">
+                    <div class="inline-flex items-center gap-2 text-slate-500">
+                        <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
+                        <span>Lade Vorschau...</span>
+                    </div>
+                </div>
+
+                <!-- Preview Content -->
+                <div x-show="!previewLoading && previewData" class="space-y-6">
+                    <!-- Campaign Info -->
+                    <div x-show="previewData?.campaign" class="bg-slate-50 rounded-xl p-4">
+                        <div class="flex items-center gap-3">
+                            <div :class="'w-10 h-10 bg-' + previewData?.provider + ' rounded-lg flex items-center justify-center text-white font-bold'">
+                                <span x-text="previewData?.provider === 'linkedin' ? 'in' : previewData?.provider?.charAt(0).toUpperCase()"></span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800" x-text="previewData?.campaign?.name"></h4>
+                                <p class="text-sm text-slate-500" x-text="'Typ: ' + (previewData?.campaign?.type || '-') + ' | Status: ' + (previewData?.campaign?.status || '-')"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error State -->
+                    <div x-show="previewData?.error" class="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                            <span x-text="previewData?.error"></span>
+                        </div>
+                    </div>
+
+                    <!-- No Ads State -->
+                    <div x-show="!previewData?.error && previewData?.total_ads === 0" class="py-8 text-center">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="image-off" class="w-8 h-8 text-slate-400"></i>
+                        </div>
+                        <h4 class="font-medium text-slate-600">Keine Anzeigen gefunden</h4>
+                        <p class="text-sm text-slate-400 mt-1">Diese Kampagne hat noch keine Anzeigen oder ist eine Performance Max Kampagne.</p>
+                    </div>
+
+                    <!-- Ad Groups & Ads -->
+                    <div x-show="previewData?.ad_groups?.length > 0">
+                        <h4 class="font-semibold text-slate-800 mb-3">Anzeigengruppen & Anzeigen</h4>
+                        <div class="space-y-4">
+                            <template x-for="adGroup in previewData?.ad_groups || []" :key="adGroup.id">
+                                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                                    <div class="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-medium text-slate-700" x-text="adGroup.name"></span>
+                                            <span :class="{
+                                                'bg-green-100 text-green-700': adGroup.status === 'enabled' || adGroup.status === 'ENABLED',
+                                                'bg-amber-100 text-amber-700': adGroup.status === 'paused' || adGroup.status === 'PAUSED'
+                                            }" class="px-2 py-0.5 rounded text-xs font-medium" x-text="adGroup.status"></span>
+                                        </div>
+                                    </div>
+                                    <div class="divide-y divide-slate-100">
+                                        <template x-for="ad in adGroup.ads" :key="ad.id">
+                                            <div class="p-4">
+                                                <div class="flex items-start gap-4">
+                                                    <!-- Ad Image/Video Preview -->
+                                                    <div class="w-24 h-24 bg-slate-100 rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center">
+                                                        <template x-if="ad.image_url || ad.image_urls?.length > 0">
+                                                            <img :src="ad.image_url || ad.image_urls[0]" class="w-full h-full object-cover" alt="Ad Image">
+                                                        </template>
+                                                        <template x-if="ad.video_id && !ad.image_url && !(ad.image_urls?.length > 0)">
+                                                            <div class="text-center">
+                                                                <i data-lucide="video" class="w-8 h-8 text-slate-400 mx-auto"></i>
+                                                                <span class="text-xs text-slate-400 mt-1">Video</span>
+                                                            </div>
+                                                        </template>
+                                                        <template x-if="!ad.image_url && !(ad.image_urls?.length > 0) && !ad.video_id">
+                                                            <i data-lucide="image" class="w-8 h-8 text-slate-300"></i>
+                                                        </template>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <!-- Header mit Name, Typ und CTA -->
+                                                        <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                                            <span class="font-medium text-slate-800" x-text="ad.name || 'Anzeige ' + ad.id"></span>
+                                                            <span class="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded" x-text="ad.type"></span>
+                                                            <span x-show="ad.raw_data?.cta" class="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded" x-text="ad.raw_data?.cta"></span>
+                                                            <span x-show="ad.video_id" class="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded flex items-center gap-1">
+                                                                <i data-lucide="video" class="w-3 h-3"></i> Video
+                                                            </span>
+                                                        </div>
+
+                                                        <!-- Headlines -->
+                                                        <div x-show="ad.headlines?.length > 0" class="mb-2">
+                                                            <div class="text-xs text-slate-500 mb-1">Headlines:</div>
+                                                            <div class="flex flex-wrap gap-1">
+                                                                <template x-for="(headline, idx) in (ad.headlines || [])" :key="idx">
+                                                                    <span class="text-sm bg-blue-50 text-blue-700 px-2 py-0.5 rounded" x-text="headline"></span>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Descriptions -->
+                                                        <div x-show="ad.descriptions?.length > 0" class="mb-2">
+                                                            <div class="text-xs text-slate-500 mb-1">Beschreibungen:</div>
+                                                            <div class="space-y-1">
+                                                                <template x-for="(desc, idx) in (ad.descriptions || [])" :key="idx">
+                                                                    <p class="text-sm text-slate-600 bg-slate-50 px-2 py-1 rounded" x-text="desc"></p>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Final URL -->
+                                                        <div x-show="ad.final_urls?.length > 0" class="mb-2">
+                                                            <a :href="ad.final_urls[0]" target="_blank" class="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                                                                <i data-lucide="external-link" class="w-3 h-3"></i>
+                                                                <span x-text="ad.final_urls[0]"></span>
+                                                            </a>
+                                                        </div>
+
+                                                        <!-- Effective Status -->
+                                                        <div x-show="ad.raw_data?.effective_status" class="text-xs text-slate-400">
+                                                            Effektiver Status: <span x-text="ad.raw_data?.effective_status"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <div x-show="adGroup.ads.length === 0" class="p-4 text-center text-sm text-slate-400">
+                                            Keine Anzeigen in dieser Gruppe
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div x-show="previewData?.total_ads > 0" class="text-center text-sm text-slate-500 pt-4 border-t border-slate-200">
+                        <span x-text="previewData?.ad_groups?.length || 0"></span> Anzeigengruppe(n) |
+                        <span x-text="previewData?.total_ads || 0"></span> Anzeige(n)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function dashboard() {
+            return {
+                // State
+                selectedClient: 'afm_screenshot',
+                platformFilter: 'all',
+                loading: false,
+                showSettings: false,
+                apiKey: localStorage.getItem('adsManagerApiKey') || '',
+                apiKeyInput: '',
+                apiKeyChanged: false,
+                clients: [],
+                clientsData: {},
+                allCampaignsData: {},
+                campaigns: [],
+                lastUpdate: '-',
+                toasts: [],
+                showPreview: false,
+                previewLoading: false,
+                previewData: null,
+
+                // Computed
+                get currentClientName() {
+                    if (this.selectedClient === 'all') return 'Gesamtübersicht';
+                    const client = this.clients.find(c => c.id === this.selectedClient);
+                    return client?.name || 'Unbekannt';
+                },
+
+                get currentClientIcon() {
+                    if (this.selectedClient === 'all') return '';
+                    const client = this.clients.find(c => c.id === this.selectedClient);
+                    return client?.icon || '?';
+                },
+
+                get currentStats() {
+                    if (this.selectedClient === 'all') {
+                        // Calculate stats from all unfiltered campaigns
+                        let stats = { total: 0, active: 0, paused: 0, budget: 0, platforms: {} };
+                        const normalizeStatus = (s) => (s || '').toLowerCase();
+
+                        for (const platform in this.allCampaignsData) {
+                            const campaigns = this.allCampaignsData[platform] || [];
+                            stats.total += campaigns.length;
+                            stats.active += campaigns.filter(c => normalizeStatus(c.status) === 'enabled').length;
+                            stats.paused += campaigns.filter(c => normalizeStatus(c.status) === 'paused').length;
+                            stats.budget += campaigns.reduce((sum, c) => sum + (c.budget || 0), 0);
+
+                            if (campaigns.length > 0) {
+                                stats.platforms[platform] = {
+                                    count: campaigns.length,
+                                    active: campaigns.filter(c => normalizeStatus(c.status) === 'enabled').length
+                                };
+                            }
+                        }
+                        return stats;
+                    }
+
+                    const data = this.clientsData[this.selectedClient];
+                    return data?.stats || { total: 0, active: 0, paused: 0, budget: 0, platforms: {} };
+                },
+
+                get filteredCampaigns() {
+                    let campaigns = this.campaigns;
+
+                    if (this.platformFilter !== 'all') {
+                        campaigns = campaigns.filter(c => c._platform === this.platformFilter);
+                    }
+
+                    return campaigns;
+                },
+
+                // Init
+                async init() {
+                    if (this.apiKey) {
+                        this.apiKeyInput = '••••••••••••••••';
+                    }
+
+                    this.$nextTick(() => {
+                        lucide.createIcons();
+                    });
+
+                    await this.loadClients();
+
+                    if (this.apiKey && this.clients.length > 0) {
+                        this.loadData();
+                    }
+                },
+
+                // Methods
+                async loadClients() {
+                    try {
+                        const response = await fetch('/api/clients/', {
+                            headers: { 'X-API-Key': this.apiKey || 'init' }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.clients = Object.entries(data.clients).map(([id, client]) => ({
+                                id,
+                                ...client
+                            }));
+                        }
+                    } catch (error) {
+                        console.error('Error loading clients:', error);
+                        this.clients = [
+                            { id: 'afm_screenshot', name: 'AFM-Screenshot', short: 'AFM', icon: '📸', color: '#3B82F6', platforms: { google: {}, meta: {} } },
+                            { id: 'rechnungseintreibung', name: 'Rechnungseintreibung', short: 'RE', icon: '💰', color: '#10B981', platforms: { google: {}, meta: {} } },
+                            { id: 'spr_kanzlei', name: 'SP-R Kanzlei', short: 'SPR', icon: '⚖️', color: '#8B5CF6', platforms: { google: {}, meta: {}, linkedin: {} } },
+                            { id: '911_abfluss', name: '911 Abfluss', short: '911', icon: '🚿', color: '#EF4444', platforms: { google: {}, meta: {}, linkedin: {} } }
+                        ];
+                    }
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                getClientPlatformCount(client) {
+                    if (!client.platforms) return 0;
+                    return Object.values(client.platforms).filter(p => p !== null).length;
+                },
+
+                getClientBudgetDisplay(clientId) {
+                    const data = this.clientsData[clientId];
+                    if (!data?.stats) return '—';
+                    const spent = data.stats.spent || 0;
+                    const budget = data.stats.budget || 0;
+                    if (budget === 0 && spent === 0) return '—';
+                    if (spent > 0) {
+                        return this.formatCurrencyShort(spent) + ' / ' + this.formatCurrencyShort(budget);
+                    }
+                    return this.formatCurrencyShort(budget) + ' Budget';
+                },
+
+                getTotalBudgetDisplay() {
+                    let totalBudget = 0;
+                    let totalSpent = 0;
+                    for (const clientId in this.clientsData) {
+                        const data = this.clientsData[clientId];
+                        if (data?.stats) {
+                            totalBudget += data.stats.budget || 0;
+                            totalSpent += data.stats.spent || 0;
+                        }
+                    }
+                    if (totalBudget === 0 && totalSpent === 0) return 'Alle Unternehmen';
+                    if (totalSpent > 0) {
+                        return this.formatCurrencyShort(totalSpent) + ' / ' + this.formatCurrencyShort(totalBudget);
+                    }
+                    return this.formatCurrencyShort(totalBudget) + ' Gesamt';
+                },
+
+                getAvailablePlatforms() {
+                    const client = this.clients.find(c => c.id === this.selectedClient);
+                    if (!client?.platforms) return [];
+                    return Object.entries(client.platforms)
+                        .filter(([_, config]) => config !== null)
+                        .map(([plat, _]) => plat);
+                },
+
+                switchClient(clientId) {
+                    this.selectedClient = clientId;
+                    this.platformFilter = 'all';
+                    this.updateDisplayedCampaigns();
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                async loadData() {
+                    if (!this.apiKey) {
+                        this.showSettings = true;
+                        return;
+                    }
+
+                    this.loading = true;
+
+                    try {
+                        // Load filtered campaigns per client
+                        await Promise.all(this.clients.map(client => this.loadClientData(client.id)));
+
+                        // Load all unfiltered campaigns for "Gesamtübersicht"
+                        await this.loadAllCampaigns();
+
+                        this.updateDisplayedCampaigns();
+                        this.lastUpdate = new Date().toLocaleTimeString('de-DE');
+                        this.toast('Daten aktualisiert', 'success');
+                    } catch (error) {
+                        this.toast(error.message, 'error');
+                    } finally {
+                        this.loading = false;
+                        this.$nextTick(() => lucide.createIcons());
+                    }
+                },
+
+                async loadAllCampaigns() {
+                    // Load all campaigns without prefix filtering
+                    const allCampaigns = { google: [], meta: [], linkedin: [] };
+                    const accounts = {
+                        google: '2936775113',
+                        meta: 'act_34886324',
+                        linkedin: '519591953'
+                    };
+
+                    for (const [platform, accountId] of Object.entries(accounts)) {
+                        try {
+                            const response = await fetch(`/api/campaigns/${platform}/${accountId}`, {
+                                headers: { 'X-API-Key': this.apiKey }
+                            });
+                            if (response.ok) {
+                                const campaigns = await response.json();
+                                allCampaigns[platform] = campaigns.map(c => ({
+                                    ...c,
+                                    _platform: platform,
+                                    _clientId: 'all',
+                                    _clientName: 'Alle',
+                                    _clientIcon: '🌐',
+                                    _clientColor: '#6B7280',
+                                    _accountId: accountId
+                                }));
+                            }
+                        } catch (e) {
+                            console.error(`Error loading ${platform}:`, e);
+                        }
+                    }
+
+                    this.allCampaignsData = allCampaigns;
+                },
+
+                async loadClientData(clientId) {
+                    const client = this.clients.find(c => c.id === clientId);
+                    if (!client) return;
+
+                    try {
+                        const response = await fetch(`/api/clients/${clientId}/campaigns`, {
+                            headers: { 'X-API-Key': this.apiKey }
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('API Error');
+                        }
+
+                        const data = await response.json();
+
+                        const campaigns = { google: [], meta: [], linkedin: [] };
+                        const stats = { total: 0, active: 0, paused: 0, budget: 0, platforms: {} };
+
+                        for (const [platform, platformData] of Object.entries(data.campaigns || {})) {
+                            if (platformData.error) continue;
+
+                            const platformCampaigns = platformData.campaigns || [];
+                            campaigns[platform] = platformCampaigns.map(c => ({
+                                ...c,
+                                _platform: platform,
+                                _clientId: clientId,
+                                _clientName: client.name,
+                                _clientIcon: client.icon,
+                                _clientColor: client.color,
+                                _accountId: platformData.account_id
+                            }));
+
+                            const normalizeStatus = (s) => (s || '').toLowerCase();
+                            stats.total += platformCampaigns.length;
+                            stats.active += platformCampaigns.filter(c => normalizeStatus(c.status) === 'enabled').length;
+                            stats.paused += platformCampaigns.filter(c => normalizeStatus(c.status) === 'paused').length;
+                            stats.budget += platformCampaigns.reduce((sum, c) => sum + (c.budget || 0), 0);
+
+                            stats.platforms[platform] = {
+                                count: platformCampaigns.length,
+                                active: platformCampaigns.filter(c => normalizeStatus(c.status) === 'enabled').length,
+                                account_id: platformData.account_id
+                            };
+                        }
+
+                        this.clientsData[clientId] = { campaigns, stats };
+                    } catch (error) {
+                        console.error(`Error loading ${clientId}:`, error);
+                        this.clientsData[clientId] = {
+                            campaigns: { google: [], meta: [], linkedin: [] },
+                            stats: { total: 0, active: 0, paused: 0, budget: 0, platforms: {} }
+                        };
+                    }
+                },
+
+                updateDisplayedCampaigns() {
+                    if (this.selectedClient === 'all') {
+                        // Use all unfiltered campaigns for Gesamtübersicht
+                        this.campaigns = [];
+                        for (const platform in this.allCampaignsData) {
+                            this.campaigns.push(...(this.allCampaignsData[platform] || []));
+                        }
+                    } else {
+                        const data = this.clientsData[this.selectedClient];
+                        if (data) {
+                            this.campaigns = [
+                                ...data.campaigns.google,
+                                ...data.campaigns.meta,
+                                ...data.campaigns.linkedin
+                            ];
+                        } else {
+                            this.campaigns = [];
+                        }
+                    }
+                },
+
+                async pauseCampaign(campaign) {
+                    try {
+                        const response = await fetch(`/api/campaigns/${campaign._platform}/${campaign._accountId}/${campaign.id}/pause`, {
+                            method: 'POST',
+                            headers: { 'X-API-Key': this.apiKey }
+                        });
+
+                        if (!response.ok) throw new Error('Fehler beim Pausieren');
+
+                        this.toast('Kampagne pausiert', 'success');
+                        this.loadData();
+                    } catch (error) {
+                        this.toast(error.message, 'error');
+                    }
+                },
+
+                async enableCampaign(campaign) {
+                    try {
+                        const response = await fetch(`/api/campaigns/${campaign._platform}/${campaign._accountId}/${campaign.id}/enable`, {
+                            method: 'POST',
+                            headers: { 'X-API-Key': this.apiKey }
+                        });
+
+                        if (!response.ok) throw new Error('Fehler beim Aktivieren');
+
+                        this.toast('Kampagne aktiviert', 'success');
+                        this.loadData();
+                    } catch (error) {
+                        this.toast(error.message, 'error');
+                    }
+                },
+
+                async loadPreview(campaign) {
+                    this.showPreview = true;
+                    this.previewLoading = true;
+                    this.previewData = null;
+
+                    this.$nextTick(() => lucide.createIcons());
+
+                    try {
+                        const response = await fetch(`/api/campaigns/${campaign._platform}/${campaign._accountId}/${campaign.id}/preview`, {
+                            headers: { 'X-API-Key': this.apiKey }
+                        });
+
+                        if (!response.ok) throw new Error('Fehler beim Laden der Vorschau');
+
+                        this.previewData = await response.json();
+                    } catch (error) {
+                        this.previewData = { error: error.message };
+                    } finally {
+                        this.previewLoading = false;
+                        this.$nextTick(() => lucide.createIcons());
+                    }
+                },
+
+                saveSettings() {
+                    if (this.apiKeyChanged && this.apiKeyInput && !this.apiKeyInput.includes('•')) {
+                        this.apiKey = this.apiKeyInput;
+                        localStorage.setItem('adsManagerApiKey', this.apiKey);
+                        this.apiKeyInput = '••••••••••••••••';
+                        this.apiKeyChanged = false;
+                    }
+
+                    this.showSettings = false;
+                    this.toast('Einstellungen gespeichert', 'success');
+
+                    if (this.apiKey) {
+                        this.loadData();
+                    }
+                },
+
+                // Helpers
+                formatCurrency(value) {
+                    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value || 0);
+                },
+
+                formatCurrencyShort(value) {
+                    if (!value || value === 0) return '€0';
+                    if (value >= 1000) {
+                        return '€' + (value / 1000).toFixed(1).replace('.0', '') + 'k';
+                    }
+                    return '€' + Math.round(value);
+                },
+
+                formatBudget(campaign) {
+                    const micros = campaign.budget_amount_micros || (campaign.budget ? campaign.budget * 1000000 : 0);
+                    return this.formatCurrency(micros / 1000000);
+                },
+
+                toast(message, type = 'info') {
+                    const id = Date.now();
+                    this.toasts.push({ id, message, type, show: true });
+                    setTimeout(() => {
+                        const toast = this.toasts.find(t => t.id === id);
+                        if (toast) toast.show = false;
+                        setTimeout(() => {
+                            this.toasts = this.toasts.filter(t => t.id !== id);
+                        }, 300);
+                    }, 3000);
+                }
+            };
+        }
+    </script>
+</body>
+</html>
