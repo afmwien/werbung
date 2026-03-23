@@ -158,15 +158,15 @@ class LinkedInAdsProvider(AdsProvider):
         campaigns = []
 
         try:
-            # v2 API Endpunkt für Kampagnen
+            # REST API Endpunkt für Kampagnen (Account-ID im Pfad)
             response = await self._client.get(
-                "/adCampaignsV2",
-                params={
-                    "q": "search",
-                    "search.account.values[0]": f"urn:li:sponsoredAccount:{customer_id}",
-                },
+                f"/adAccounts/{customer_id}/adCampaigns",
                 headers=self._get_headers()
             )
+
+            # 404 = keine Kampagnen vorhanden
+            if response.status_code == 404:
+                return []
 
             if response.status_code != 200:
                 error_data = response.json() if response.text else {}
@@ -194,7 +194,7 @@ class LinkedInAdsProvider(AdsProvider):
 
         try:
             response = await self._client.get(
-                f"/adCampaigns/{campaign_id}",
+                f"/adAccounts/{customer_id}/adCampaigns/{campaign_id}",
                 headers=self._get_headers()
             )
 
@@ -234,7 +234,7 @@ class LinkedInAdsProvider(AdsProvider):
             }
 
             response = await self._client.post(
-                "/adCampaigns",
+                f"/adAccounts/{customer_id}/adCampaigns",
                 json=campaign_data,
                 headers=self._get_headers()
             )
@@ -276,7 +276,7 @@ class LinkedInAdsProvider(AdsProvider):
 
             if update_data:
                 response = await self._client.post(
-                    f"/adCampaigns/{campaign_id}",
+                    f"/adAccounts/{customer_id}/adCampaigns/{campaign_id}",
                     json=update_data,
                     headers={
                         **self._get_headers(),
@@ -304,7 +304,7 @@ class LinkedInAdsProvider(AdsProvider):
 
         try:
             response = await self._client.post(
-                f"/adCampaigns/{campaign_id}",
+                f"/adAccounts/{customer_id}/adCampaigns/{campaign_id}",
                 json={"status": "PAUSED"},
                 headers={
                     **self._get_headers(),
@@ -324,7 +324,7 @@ class LinkedInAdsProvider(AdsProvider):
 
         try:
             response = await self._client.post(
-                f"/adCampaigns/{campaign_id}",
+                f"/adAccounts/{customer_id}/adCampaigns/{campaign_id}",
                 json={"status": "ACTIVE"},
                 headers={
                     **self._get_headers(),
@@ -344,7 +344,7 @@ class LinkedInAdsProvider(AdsProvider):
 
         try:
             response = await self._client.post(
-                f"/adCampaigns/{campaign_id}",
+                f"/adAccounts/{customer_id}/adCampaigns/{campaign_id}",
                 json={"status": "ARCHIVED"},
                 headers={
                     **self._get_headers(),
