@@ -14,7 +14,7 @@ load_dotenv()
 # LinkedIn App Credentials aus .env
 CLIENT_ID = os.getenv("LINKEDIN_CLIENT_ID", "")
 CLIENT_SECRET = os.getenv("LINKEDIN_CLIENT_SECRET", "")
-REDIRECT_URI = "https://api.afm.wien/callback"  # Muss in LinkedIn App registriert sein
+REDIRECT_URI = "https://werbung.afm-software.com/callback"  # Muss in LinkedIn App registriert sein
 
 # Benötigte Scopes für Ads API
 SCOPES = [

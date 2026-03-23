@@ -43,8 +43,8 @@ class LinkedInAdsProvider(AdsProvider):
     """
 
     provider_name = "linkedin"
-    BASE_URL = "https://api.linkedin.com/v2"  # v2 API funktioniert besser
-    API_VERSION = "202402"  # LinkedIn API Versionierung (für REST API)
+    BASE_URL = "https://api.linkedin.com/rest"  # REST API mit Versionierung
+    API_VERSION = "202503"  # LinkedIn API Version (YYYYMM Format)
 
     def __init__(
         self,
@@ -64,10 +64,12 @@ class LinkedInAdsProvider(AdsProvider):
         self._client: "Optional[httpx.AsyncClient]" = None  # type: ignore[valid-type]
 
     def _get_headers(self) -> dict:
-        """Standard Header für LinkedIn API Anfragen"""
+        """Standard Header für LinkedIn REST API Anfragen"""
         return {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
+            "LinkedIn-Version": self.API_VERSION,
+            "X-Restli-Protocol-Version": "2.0.0",
         }
 
     async def _ensure_client(self):
@@ -101,14 +103,15 @@ class LinkedInAdsProvider(AdsProvider):
             raise LinkedInAdsError(f"LinkedIn Ads Authentifizierung fehlgeschlagen: {e}") from e
 
     async def test_connection(self) -> bool:
-        """Verbindung testen durch Abruf des User-Profils"""
+        """Verbindung testen durch Abruf der Ad Accounts"""
         if not self._initialized:
             await self.authenticate()
 
         try:
-            # User Info abrufen
+            # Ad Accounts abrufen um Verbindung zu testen
             response = await self._client.get(
-                "https://api.linkedin.com/v2/userinfo",
+                "/adAccounts",
+                params={"q": "search"},
                 headers=self._get_headers()
             )
             if response.status_code == 200:
@@ -118,19 +121,15 @@ class LinkedInAdsProvider(AdsProvider):
             return False
 
     async def get_user_info(self) -> dict:
-        """LinkedIn User Info abrufen"""
+        """LinkedIn Ad Account Info abrufen"""
         if not self._initialized:
             await self.authenticate()
 
-        response = await self._client.get(
-            "https://api.linkedin.com/v2/userinfo",
-            headers=self._get_headers()
-        )
-
-        if response.status_code != 200:
-            raise LinkedInAdsError(f"Fehler beim Abrufen der User Info: {response.text}")
-
-        return response.json()
+        # Nutze Ad Accounts statt userinfo (braucht andere Scopes)
+        accounts = await self.get_ad_accounts()
+        if accounts:
+            return {"ad_accounts": accounts}
+        return {}
 
     async def get_ad_accounts(self) -> List[dict]:
         """Alle Ad Accounts des Users abrufen"""
